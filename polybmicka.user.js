@@ -202,17 +202,14 @@
 
         clickTradeButton() {
             // The trade button uses data-three-dee with data-tapstate
-            // Needs full mouse event sequence to trigger React handlers
+            // Strategy: focus + keyboard Enter (most reliable for React 3D buttons)
             const btn = this.findTradeButton();
             if (!btn) return false;
-            const opts = { bubbles: true, cancelable: true, view: window };
-            btn.dispatchEvent(new MouseEvent('pointerdown', opts));
-            btn.dispatchEvent(new MouseEvent('mousedown', opts));
-            setTimeout(() => {
-                btn.dispatchEvent(new MouseEvent('pointerup', opts));
-                btn.dispatchEvent(new MouseEvent('mouseup', opts));
-                btn.dispatchEvent(new MouseEvent('click', opts));
-            }, 50);
+            btn.focus();
+            btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
+            btn.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
+            // Also try click as fallback
+            btn.click();
             return true;
         },
 
