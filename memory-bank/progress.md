@@ -1,6 +1,6 @@
 # Progress
 
-## Co funguje (v0.4.0)
+## Co funguje (v0.4.1)
 
 - Monitoring 100ms sampling z DOM
 - Trend engine 10s rolling window
@@ -21,11 +21,21 @@
 - MIT LICENSE
 - README s plnym popisem features
 
+## Co je nove v0.4.1
+
+- Profit killswitch: pokud profit < -$5 -> hlavni vypinac OFF
+- Cash balance scraping z a[href="/portfolio"] v nav baru
+- Cash zobrazeni na 3. radku overlay (zeleny >= $12, cerveny + LOW! < $12)
+- Cash safety: skip trade pokud cash < $12
+- Throttled cash scraping (1s interval)
+- Overlay.disableMainSwitch(reason) metoda
+- CONFIG: PROFIT_KILLSWITCH=-5, MIN_CASH_TO_TRADE=12
+
 ## Git statistiky
 
 - 40+ commitu
 - Branch: main
-- Posledni commit: 769d251
+- Posledni commit: a80bf50
 
 ## Zname problemy
 

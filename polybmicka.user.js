@@ -442,7 +442,7 @@
                         Logger.log('SAFETY NET: resolve flipped to ' + oppSide + '! Buying opposite @ ' + oppPrice + 'c');
                         ProfitTracker._safetyBought = true;
                         ProfitTracker._safetyBuy = { side: oppSide, price: oppPrice, amount: CONFIG.MAX_BUY_AMOUNT };
-                        ProfitTracker._simulateClickAmount(oppSide); // click outcome + +$1 on PM UI
+                        ProfitTracker._clickOutcomeAndTrade(oppSide); // click outcome + trade (skip +$1, already set)
                     }
                 }
             }
@@ -669,6 +669,38 @@
                     Logger.log('WARNING: +$1 button not found on page');
                 }
             }, 50);
+        },
+
+        _clickOutcomeAndTrade(side) {
+            // Safety net version: only click outcome + trade button
+            // Skip +$1 because the amount is already set from the original buy
+            const { buyTab } = PageAdapter.findBuySellTabs();
+            if (buyTab && buyTab.getAttribute('data-state') !== 'checked') {
+                buyTab.click();
+                Logger.log('Safety: clicked Buy tab');
+            }
+
+            const { upBtn, downBtn } = PageAdapter.findUpDownButtons();
+            const targetBtn = side === 'UP' ? upBtn : downBtn;
+            if (targetBtn) {
+                targetBtn.click();
+                Logger.log('Safety: clicked ' + side + ' outcome button');
+            }
+
+            // LIVE MODE: click the trade button (amount already $1 from original buy)
+            if (Overlay.getBuyMode() === 'LIVE') {
+                setTimeout(() => {
+                    const tradeBtn = PageAdapter.findTradeButton();
+                    if (tradeBtn) {
+                        const tradeBtnText = tradeBtn.textContent.trim();
+                        Logger.log('SAFETY LIVE BUY: clicking "' + tradeBtnText + '"');
+                        tradeBtn.click();
+                        Logger.log('SAFETY LIVE BUY: executed!');
+                    } else {
+                        Logger.log('SAFETY LIVE BUY ERROR: trade button not found!');
+                    }
+                }, 50);
+            }
         },
 
         resolveMarket(winningSide) {
