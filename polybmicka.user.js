@@ -723,6 +723,23 @@
             status.id = 'pbm-status';
             status.style.cssText = 'margin-bottom:6px; color:#888;';
             status.textContent = 'Status: initializing...';
+
+            // Fresh button - clicks "Go to live market" on PM page
+            const freshBtn = document.createElement('button');
+            freshBtn.style.cssText = 'padding:1px 6px; border:1px solid #2a5a2a; border-radius:3px; cursor:pointer; font-size:9px; font-family:monospace; background:#1a3a1a; color:#4a8a4a; margin-left:6px;';
+            freshBtn.textContent = 'Fresh';
+            freshBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const goBtn = PageAdapter.findGoToLiveMarketButton();
+                if (goBtn) {
+                    goBtn.click();
+                    Logger.log('Clicked "Go to live market"');
+                } else {
+                    Logger.log('No "Go to live market" button found');
+                }
+            });
+            status.appendChild(freshBtn);
+
             container.appendChild(status);
             this._elements.status = status;
 
