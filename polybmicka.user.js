@@ -25,7 +25,7 @@
         URL_CHECK_INTERVAL_MS: 1000,
         DOM_RETRY_INTERVAL_MS: 500,
         DOM_RETRY_MAX: 60,
-        VERSION: '0.2.0',
+        VERSION: '0.2.1',
 
         // Trading rules
         MAX_BUY_AMOUNT: 1,              // max $1 per market
@@ -218,6 +218,51 @@
             return null;
         },
 
+        getMarketResult() {
+            // Determine winner by comparing "Price to beat" vs "Current price" BTC values
+            // "Price to beat" = opening BTC price, "Current price" = live BTC price
+            // If current >= beat => UP wins, else DOWN wins
+            let priceToBeat = null;
+            let currentPrice = null;
+
+            const allSpans = document.querySelectorAll('span');
+            for (const span of allSpans) {
+                const text = (span.textContent || '').trim();
+                if (text === 'Price to beat') {
+                    // Next sibling or parent's next element has the dollar amount
+                    const parent = span.closest('div');
+                    if (parent) {
+                        const priceSpan = parent.querySelector('span.text-heading-2xl, span[class*="heading"]');
+                        if (priceSpan) {
+                            const priceMatch = priceSpan.textContent.replace(/[,$\s]/g, '').match(/[\d.]+/);
+                            if (priceMatch) priceToBeat = parseFloat(priceMatch[0]);
+                        }
+                    }
+                }
+                if (text === 'Current price') {
+                    const parent = span.closest('div');
+                    if (parent) {
+                        // Current price uses number-flow-react component, read from textContent
+                        const allNums = parent.querySelectorAll('number-flow-react, span.text-heading-2xl, span[class*="heading"]');
+                        for (const numEl of allNums) {
+                            const numText = numEl.textContent.replace(/[,$\s]/g, '').match(/[\d.]+/);
+                            if (numText) {
+                                currentPrice = parseFloat(numText[0]);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (priceToBeat !== null && currentPrice !== null) {
+                const winner = currentPrice >= priceToBeat ? 'UP' : 'DOWN';
+                return { winner, priceToBeat, currentPrice };
+            }
+
+            return null;
+        },
+
         getRemainingSeconds() {
             // Calculate remaining time from URL timestamp
             // URL: /event/btc-updown-5m-{startTimestamp}
@@ -302,10 +347,18 @@
 
             // Detect market expiry: resolve sim trade
             if (remainingSecs !== null && remainingSecs <= 0 && ProfitTracker.getCurrentBuy()) {
-                // Determine winner: whichever side has higher final price
-                const winSide = (upPrice !== null && downPrice !== null && upPrice > downPrice) ? 'UP' : 'DOWN';
-                Logger.log('Market expired. Winner: ' + winSide + ' (Up=' + upPrice + 'c, Down=' + downPrice + 'c)');
-                ProfitTracker.resolveMarket(winSide);
+                // Determine winner by comparing "Price to beat" vs "Current price"
+                // If current BTC price >= price to beat => UP wins, else DOWN wins
+                const result = PageAdapter.getMarketResult();
+                if (result) {
+                    Logger.log('Market expired. ' + result.winner + ' wins (beat=' + result.priceToBeat + ' curr=' + result.currentPrice + ')');
+                    ProfitTracker.resolveMarket(result.winner);
+                } else {
+                    // Fallback: use button prices
+                    const winSide = (upPrice !== null && downPrice !== null && upPrice > downPrice) ? 'UP' : 'DOWN';
+                    Logger.log('Market expired (fallback). Winner: ' + winSide + ' (Up=' + upPrice + 'c, Down=' + downPrice + 'c)');
+                    ProfitTracker.resolveMarket(winSide);
+                }
             }
         },
 
