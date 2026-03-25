@@ -59,6 +59,10 @@ Tampermonkey skript, ktery na Polymarket strance BTC Up/Down 5-minute marketu:
 - **Sim** - aktualni simulovana pozice
 - **Profit from PolyBMiCka** - persistentni celkovy profit
 
+## License
+
+MIT License - viz [LICENSE](LICENSE)
+
 ## Disclaimer
 
 Toto je experimentalni nastroj. Pouzivejte na vlastni riziko. Automatizovane obchodovani nese provozni, trzni i regulatorni riziko.
