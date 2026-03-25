@@ -202,14 +202,28 @@
 
         clickTradeButton() {
             // The trade button uses data-three-dee with data-tapstate
-            // Strategy: focus + keyboard Enter (most reliable for React 3D buttons)
+            // Strategy: try multiple approaches to trigger React click handler
             const btn = this.findTradeButton();
             if (!btn) return false;
-            btn.focus();
-            btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
-            btn.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
-            // Also try click as fallback
-            btn.click();
+
+            // Approach 1: Find React's onClick via __reactFiber or __reactProps
+            const reactPropsKey = Object.keys(btn).find(k => k.startsWith('__reactProps$'));
+            if (reactPropsKey && btn[reactPropsKey] && btn[reactPropsKey].onClick) {
+                btn[reactPropsKey].onClick({ preventDefault: () => {}, stopPropagation: () => {} });
+                return true;
+            }
+
+            // Approach 2: Dispatch trusted-like click with all properties
+            const rect = btn.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            const clickOpts = { bubbles: true, cancelable: true, view: window, clientX: cx, clientY: cy, button: 0 };
+            btn.dispatchEvent(new PointerEvent('pointerdown', clickOpts));
+            btn.dispatchEvent(new MouseEvent('mousedown', clickOpts));
+            btn.dispatchEvent(new PointerEvent('pointerup', clickOpts));
+            btn.dispatchEvent(new MouseEvent('mouseup', clickOpts));
+            btn.dispatchEvent(new MouseEvent('click', clickOpts));
+
             return true;
         },
 
