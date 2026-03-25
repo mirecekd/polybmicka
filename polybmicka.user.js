@@ -346,8 +346,9 @@
             const trend = TrendEngine.calculate(this._samples);
             Overlay.updateTrend(trend);
 
-            // Simulated buy logic: if BUY is ARMED and signal fires, simulate a buy
-            if (trend.signal && Overlay.isBuyEnabled() && !ProfitTracker.getCurrentBuy()) {
+            // Buy logic: if mode is SIM or LIVE and signal fires
+            const buyMode = Overlay.getBuyMode();
+            if (trend.signal && buyMode !== 'OFF' && !ProfitTracker.getCurrentBuy()) {
                 // Parse direction from signal
                 const side = trend.signal.includes('BUY_UP') ? 'UP' : 'DOWN';
                 const price = side === 'UP' ? upPrice : downPrice;
@@ -605,7 +606,7 @@
     const Overlay = {
         _container: null,
         _enabled: false,
-        _buyEnabled: false,
+        _buyMode: 'OFF', // 'OFF' | 'SIM' | 'LIVE'
         _elements: {},
 
         init() {
@@ -675,7 +676,7 @@
             const timerRow = document.createElement('div');
             timerRow.id = 'pbm-timer';
             timerRow.style.cssText = 'margin-bottom:6px; padding:4px; background:#111; border-radius:4px; display:flex; justify-content:space-between;';
-            timerRow.innerHTML = '<span>Time left: --</span><span style="color:#666;">Rules: >' + CONFIG.MIN_PRICE_TO_BUY + 'c, <' + CONFIG.MAX_REMAINING_MINS + 'min, $' + CONFIG.MAX_BUY_AMOUNT + '</span>';
+            timerRow.innerHTML = '<span>Time left: --</span><span style="color:#666;">Rules: >' + CONFIG.MIN_PRICE_TO_BUY + 'c, <' + Math.floor(CONFIG.MAX_REMAINING_SECS / 60) + ':' + String(CONFIG.MAX_REMAINING_SECS % 60).padStart(2, '0') + ', $' + CONFIG.MAX_BUY_AMOUNT + '</span>';
             container.appendChild(timerRow);
             this._elements.timer = timerRow;
 
@@ -719,16 +720,18 @@
             const buyRow = document.createElement('div');
             buyRow.style.cssText = 'display:flex; gap:6px; margin-bottom:6px; align-items:center;';
 
-            this._buyEnabled = GM_getValue('buyEnabled', false);
+            this._buyMode = GM_getValue('buyMode', 'OFF');
             const buyBtn = document.createElement('button');
             buyBtn.style.cssText = 'padding:3px 12px; border:1px solid #555; border-radius:4px; cursor:pointer; font-size:11px; font-family:monospace; flex:1;';
             this._updateBuyBtn(buyBtn);
             buyBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                this._buyEnabled = !this._buyEnabled;
-                GM_setValue('buyEnabled', this._buyEnabled);
+                const modes = CONFIG.BUY_MODES;
+                const idx = modes.indexOf(this._buyMode);
+                this._buyMode = modes[(idx + 1) % modes.length];
+                GM_setValue('buyMode', this._buyMode);
                 this._updateBuyBtn(buyBtn);
-                Logger.log('BUY ' + (this._buyEnabled ? 'ENABLED' : 'DISABLED'));
+                Logger.log('Buy mode: ' + this._buyMode);
             });
             buyRow.appendChild(buyBtn);
             this._elements.buyBtn = buyBtn;
@@ -835,7 +838,7 @@
             if (remainingSecs <= 0) {
                 timerSpan.textContent = 'EXPIRED';
                 timerSpan.style.color = '#ff4444';
-            } else if (remainingSecs <= CONFIG.MAX_REMAINING_MINS * 60) {
+            } else if (remainingSecs <= CONFIG.MAX_REMAINING_SECS) {
                 timerSpan.textContent = 'Time: ' + timeStr + ' HOT';
                 timerSpan.style.color = '#ff8800';
             } else {
@@ -884,12 +887,16 @@
         },
 
         _updateBuyBtn(btn) {
-            if (this._buyEnabled) {
-                btn.textContent = 'SIM BUY: ON';
+            if (this._buyMode === 'LIVE') {
+                btn.textContent = 'BUY: LIVE';
+                btn.style.background = '#cc0000';
+                btn.style.color = '#fff';
+            } else if (this._buyMode === 'SIM') {
+                btn.textContent = 'BUY: SIM';
                 btn.style.background = '#cc8800';
                 btn.style.color = '#000';
             } else {
-                btn.textContent = 'SIM BUY: OFF';
+                btn.textContent = 'BUY: OFF';
                 btn.style.background = '#222';
                 btn.style.color = '#666';
             }
@@ -917,8 +924,8 @@
             return this._enabled;
         },
 
-        isBuyEnabled() {
-            return this._buyEnabled;
+        getBuyMode() {
+            return this._buyMode;
         },
 
         destroy() {
