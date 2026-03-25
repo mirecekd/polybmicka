@@ -1208,11 +1208,33 @@
                 this._elements.simTrade.style.color = '#aaa';
                 return;
             }
-            let html = buy.side + ' @ ' + buy.price + 'c $' + buy.amount;
-            html += '<br>pot. profit: +$' + potentialProfit.toFixed(2);
-            if (safetyBuy) {
-                html += '<br><span style="color:#ff8800;">SAFETY: ' + safetyBuy.side + ' @ ' + safetyBuy.price + 'c $' + safetyBuy.amount + '</span>';
+
+            if (!safetyBuy) {
+                // No safety net yet - simple 2-line display
+                let html = buy.side + ' @ ' + buy.price + 'c $' + buy.amount;
+                html += '<br>pot. profit: +$' + potentialProfit.toFixed(2);
+                this._elements.simTrade.innerHTML = html;
+                this._elements.simTrade.style.color = '#ffcc00';
+                return;
             }
+
+            // With safety net: show UP line, DOWN line, combined profit
+            const upBuy = buy.side === 'UP' ? buy : safetyBuy;
+            const downBuy = buy.side === 'DOWN' ? buy : safetyBuy;
+            const upIsSafety = (safetyBuy.side === 'UP');
+            const downIsSafety = (safetyBuy.side === 'DOWN');
+
+            // Calculate combined worst/best case profit
+            // One will win ($1 -> 100/price payout), the other loses ($1)
+            // The winning side is determined at resolve, so show both scenarios
+            const upWinProfit = ((100 / upBuy.price) * upBuy.amount - upBuy.amount) - downBuy.amount;
+            const downWinProfit = ((100 / downBuy.price) * downBuy.amount - downBuy.amount) - upBuy.amount;
+
+            let html = '';
+            html += (upIsSafety ? '<span style="color:#ff8800;">SAFETY </span>' : '') + 'UP @ ' + upBuy.price + 'c $' + upBuy.amount;
+            html += '<br>' + (downIsSafety ? '<span style="color:#ff8800;">SAFETY </span>' : '') + 'DOWN @ ' + downBuy.price + 'c $' + downBuy.amount;
+            const profitColor = (upWinProfit >= 0 || downWinProfit >= 0) ? '#ffcc00' : '#ff4444';
+            html += '<br><span style="color:' + profitColor + ';">P&L: UP wins $' + upWinProfit.toFixed(2) + ' / DN wins $' + downWinProfit.toFixed(2) + '</span>';
             this._elements.simTrade.innerHTML = html;
             this._elements.simTrade.style.color = '#ffcc00';
         },
