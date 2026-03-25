@@ -12,8 +12,7 @@ Polymarket Bitcoin Micro Cycle clicking automat - Tampermonkey userscript pro mo
 
 Tampermonkey skript, ktery na Polymarket strance BTC Up/Down 5-minute marketu:
 
-- Cte ceny Up/Down podilu v realnem case (kazdych 500ms)
-- Pocita 10s trend (smer, sila, streak)
+y- Pocita 10s trend (smer, sila, streak)
 - Ukazuje overlay panel s cenami, trendem, timerem a signalem
 - Simuluje nakupy podle pravidel (>75c, <2min do konce, streak>=3)
 - Pocita simulovany profit a uklada ho persistentne

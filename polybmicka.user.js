@@ -30,7 +30,7 @@
         // Trading rules
         MAX_BUY_AMOUNT: 1,              // max $1 per market
         MIN_PRICE_TO_BUY: 75,           // only buy if price > 75c
-        MAX_REMAINING_MINS: 3,          // only buy if remaining time < 3 minutes
+        MAX_REMAINING_MINS: 2,          // only buy if remaining time < 2 minutes
     };
 
     // =========================================================================
@@ -394,7 +394,7 @@
             const remainingMins = PageAdapter.getRemainingMinutes();
             const latest = MarketReader.getLatest();
 
-            // Rule: only trade when < 3 minutes remaining
+            // Rule: only trade when < 2 minutes remaining
             if (remainingMins === null || remainingMins >= CONFIG.MAX_REMAINING_MINS) {
                 return null; // too early, wait
             }
