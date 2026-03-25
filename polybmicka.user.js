@@ -1248,6 +1248,18 @@
             return this._buyMode;
         },
 
+        show() {
+            if (this._container) {
+                this._container.style.display = 'block';
+            }
+        },
+
+        hide() {
+            if (this._container) {
+                this._container.style.display = 'none';
+            }
+        },
+
         disableMainSwitch(reason) {
             // Killswitch: turn OFF the main toggle
             if (this._enabled) {
@@ -1320,12 +1332,14 @@
             this._lastUrl = window.location.href;
 
             if (!PageAdapter.isBtc5minMarket()) {
-                Overlay.updateStatus('Not a BTC 5min market');
-                Overlay.updateMarket(window.location.pathname);
-                // Turn off main switch when leaving BTC 5min market
+                // Hide overlay and turn off when not on BTC 5min market
+                Overlay.hide();
                 Overlay.disableMainSwitch('left BTC 5min market');
                 return;
             }
+
+            // Show overlay when on BTC 5min market
+            Overlay.show();
 
             // Extract timestamp from URL for display
             const tsMatch = window.location.pathname.match(/btc-updown-5m-(\d+)/);
