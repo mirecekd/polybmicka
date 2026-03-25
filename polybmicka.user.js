@@ -25,7 +25,7 @@
         URL_CHECK_INTERVAL_MS: 1000,
         DOM_RETRY_INTERVAL_MS: 500,
         DOM_RETRY_MAX: 60,
-        VERSION: '0.3.3',
+        VERSION: '0.4.0',
 
         // Trading rules
         MAX_BUY_AMOUNT: 1,              // max $1 per market
