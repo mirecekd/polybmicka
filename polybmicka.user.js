@@ -754,7 +754,7 @@
             // Market resolve prediction
             const resolveRow = document.createElement('div');
             resolveRow.id = 'pbm-resolve';
-            resolveRow.style.cssText = 'margin-bottom:6px; padding:4px; background:#111; border-radius:4px; font-weight:bold; font-size:13px; text-align:center;';
+            resolveRow.style.cssText = 'margin-bottom:6px; padding:3px; background:#111; border-radius:4px; font-weight:bold; font-size:11px; text-align:center; white-space:nowrap; overflow:hidden;';
             resolveRow.textContent = 'Will resolve: --';
             container.appendChild(resolveRow);
             this._elements.resolve = resolveRow;
