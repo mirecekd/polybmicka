@@ -526,7 +526,7 @@
                 Logger.log('Clicked Buy tab');
             }
 
-            // Then click +$1 button
+            // Then click +$1 button (fast sequence for LIVE mode)
             setTimeout(() => {
                 const quickBtns = PageAdapter.findQuickAmountButtons();
                 const oneBtn = quickBtns.find(b => b.label === '+$1');
@@ -534,32 +534,24 @@
                     oneBtn.el.click();
                     Logger.log('Clicked +$1 on Polymarket UI');
 
-                    // Read back the amount input to confirm
-                    setTimeout(() => {
-                        const amountInput = PageAdapter.findAmountInput();
-                        if (amountInput) {
-                            Logger.log('Amount field shows: ' + (amountInput.value || amountInput.placeholder || '?'));
-                        }
-
-                        // LIVE MODE: click the blue "Buy Up" / "Buy Down" trade button
-                        if (Overlay.getBuyMode() === 'LIVE') {
-                            setTimeout(() => {
-                                const tradeBtn = PageAdapter.findTradeButton();
-                                if (tradeBtn) {
-                                    const tradeBtnText = tradeBtn.textContent.trim();
-                                    Logger.log('LIVE BUY: clicking trade button "' + tradeBtnText + '"');
-                                    tradeBtn.click();
-                                    Logger.log('LIVE BUY: trade button clicked!');
-                                } else {
-                                    Logger.log('LIVE BUY ERROR: trade button not found!');
-                                }
-                            }, 300);
-                        }
-                    }, 200);
+                    // LIVE MODE: immediately click the blue trade button
+                    if (Overlay.getBuyMode() === 'LIVE') {
+                        setTimeout(() => {
+                            const tradeBtn = PageAdapter.findTradeButton();
+                            if (tradeBtn) {
+                                const tradeBtnText = tradeBtn.textContent.trim();
+                                Logger.log('LIVE BUY: clicking "' + tradeBtnText + '"');
+                                tradeBtn.click();
+                                Logger.log('LIVE BUY: executed!');
+                            } else {
+                                Logger.log('LIVE BUY ERROR: trade button not found!');
+                            }
+                        }, 50);
+                    }
                 } else {
                     Logger.log('WARNING: +$1 button not found on page');
                 }
-            }, 100);
+            }, 50);
         },
 
         resolveMarket(winningSide) {
