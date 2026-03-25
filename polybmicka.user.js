@@ -202,27 +202,38 @@
 
         clickTradeButton() {
             // The trade button uses data-three-dee with data-tapstate
-            // Strategy: try multiple approaches to trigger React click handler
             const btn = this.findTradeButton();
             if (!btn) return false;
 
-            // Approach 1: Find React's onClick via __reactFiber or __reactProps
-            const reactPropsKey = Object.keys(btn).find(k => k.startsWith('__reactProps$'));
-            if (reactPropsKey && btn[reactPropsKey] && btn[reactPropsKey].onClick) {
-                btn[reactPropsKey].onClick({ preventDefault: () => {}, stopPropagation: () => {} });
-                return true;
-            }
+            // Debug: log button state
+            Logger.log('TRADE BTN: text="' + btn.textContent.trim() + '" visible=' + (btn.offsetParent !== null) + ' disabled=' + btn.disabled);
 
-            // Approach 2: Dispatch trusted-like click with all properties
-            const rect = btn.getBoundingClientRect();
+            // Get the innermost text span to click on (bypass 3D button wrapper)
+            const textSpan = btn.querySelector('span.trading-button-text') || btn.querySelector('span');
+            const target = textSpan || btn;
+
+            // Click on the inner text element with centered coordinates
+            const rect = target.getBoundingClientRect();
             const cx = rect.left + rect.width / 2;
             const cy = rect.top + rect.height / 2;
+            Logger.log('TRADE BTN: clicking at (' + Math.round(cx) + ',' + Math.round(cy) + ') on ' + target.tagName + '.' + (target.className || '').split(' ')[0]);
+
             const clickOpts = { bubbles: true, cancelable: true, view: window, clientX: cx, clientY: cy, button: 0 };
-            btn.dispatchEvent(new PointerEvent('pointerdown', clickOpts));
-            btn.dispatchEvent(new MouseEvent('mousedown', clickOpts));
-            btn.dispatchEvent(new PointerEvent('pointerup', clickOpts));
-            btn.dispatchEvent(new MouseEvent('mouseup', clickOpts));
-            btn.dispatchEvent(new MouseEvent('click', clickOpts));
+
+            // Full pointer + mouse sequence on the inner element
+            target.dispatchEvent(new PointerEvent('pointerdown', clickOpts));
+            target.dispatchEvent(new MouseEvent('mousedown', clickOpts));
+            target.dispatchEvent(new PointerEvent('pointerup', clickOpts));
+            target.dispatchEvent(new MouseEvent('mouseup', clickOpts));
+            target.dispatchEvent(new MouseEvent('click', clickOpts));
+
+            // Also try btn.click() and React props as fallbacks
+            btn.click();
+            const reactPropsKey = Object.keys(btn).find(k => k.startsWith('__reactProps$'));
+            if (reactPropsKey && btn[reactPropsKey] && btn[reactPropsKey].onClick) {
+                Logger.log('TRADE BTN: found React onClick, calling directly');
+                btn[reactPropsKey].onClick({ preventDefault: () => {}, stopPropagation: () => {}, nativeEvent: new MouseEvent('click', clickOpts) });
+            }
 
             return true;
         },
