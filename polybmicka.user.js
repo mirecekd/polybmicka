@@ -910,6 +910,7 @@
                 GM_setValue('earlyEnabled', this._earlyEnabled);
                 updateEarly();
                 Logger.log('Early: ' + (this._earlyEnabled ? 'ON (3:30)' : 'OFF (2:30)'));
+                this._updateRules();
             });
             marketRow.appendChild(earlyBtn);
             container.appendChild(marketRow);
@@ -933,7 +934,7 @@
             const timerRow = document.createElement('div');
             timerRow.id = 'pbm-timer';
             timerRow.style.cssText = 'margin-bottom:6px; padding:4px; background:#111; border-radius:4px; display:flex; justify-content:space-between;';
-            timerRow.innerHTML = '<span>Time left: --</span><span style="color:#666;">Rules: >' + CONFIG.MIN_PRICE_TO_BUY + 'c, <' + Math.floor(CONFIG.MAX_REMAINING_SECS / 60) + ':' + String(CONFIG.MAX_REMAINING_SECS % 60).padStart(2, '0') + ', $' + CONFIG.MAX_BUY_AMOUNT + '</span>';
+            timerRow.innerHTML = '<span>Time left: --</span><span id="pbm-rules" style="color:#666;"></span>';
             container.appendChild(timerRow);
             this._elements.timer = timerRow;
 
@@ -1091,7 +1092,17 @@
             document.body.appendChild(container);
             this._container = container;
 
+            this._updateRules();
             Logger.log('Overlay initialized');
+        },
+
+        _updateRules() {
+            const rulesEl = this._container ? this._container.querySelector('#pbm-rules') : null;
+            if (!rulesEl) return;
+            const maxSecs = this._earlyEnabled ? 210 : CONFIG.MAX_REMAINING_SECS;
+            const mins = Math.floor(maxSecs / 60);
+            const secs = String(maxSecs % 60).padStart(2, '0');
+            rulesEl.textContent = 'Rules: >' + CONFIG.MIN_PRICE_TO_BUY + 'c, <' + mins + ':' + secs + ', $' + CONFIG.MAX_BUY_AMOUNT;
         },
 
         _updateToggleBtn(btn) {
