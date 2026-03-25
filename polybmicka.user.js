@@ -735,6 +735,8 @@
             }
         },
 
+        _lastSignal: null,
+
         updateTrend(trend) {
             if (this._elements.trend) {
                 let color = '#888';
@@ -748,10 +750,17 @@
                 if (trend.signal) {
                     this._elements.signal.textContent = 'Signal: ' + trend.signal;
                     this._elements.signal.style.color = '#ffcc00';
-                    Logger.log('SIGNAL: ' + trend.signal);
+                    // Only log when signal changes (deduplicate at 100ms sampling)
+                    if (this._lastSignal !== trend.signal) {
+                        Logger.log('SIGNAL: ' + trend.signal);
+                        this._lastSignal = trend.signal;
+                    }
                 } else {
                     this._elements.signal.textContent = 'Signal: none';
                     this._elements.signal.style.color = '#666';
+                    if (this._lastSignal !== null) {
+                        this._lastSignal = null;
+                    }
                 }
             }
         },
