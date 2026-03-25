@@ -25,7 +25,7 @@
         URL_CHECK_INTERVAL_MS: 1000,
         DOM_RETRY_INTERVAL_MS: 500,
         DOM_RETRY_MAX: 60,
-        VERSION: '0.2.1',
+        VERSION: '0.2.2',
 
         // Trading rules
         MAX_BUY_AMOUNT: 1,              // max $1 per market
@@ -306,9 +306,17 @@
             }
         },
 
+        _lastBtcResult: null,
+
         _takeSample() {
             const { upPrice, downPrice } = PageAdapter.readPrices();
             if (upPrice === null && downPrice === null) return;
+
+            // Continuously track BTC prices for market result (before they reset on expiry)
+            const btcResult = PageAdapter.getMarketResult();
+            if (btcResult) {
+                this._lastBtcResult = btcResult;
+            }
 
             const sample = {
                 ts: Date.now(),
@@ -349,14 +357,15 @@
             if (remainingSecs !== null && remainingSecs <= 0 && ProfitTracker.getCurrentBuy()) {
                 // Determine winner by comparing "Price to beat" vs "Current price"
                 // If current BTC price >= price to beat => UP wins, else DOWN wins
-                const result = PageAdapter.getMarketResult();
+                // Use live BTC result, or cached result from before expiry
+                const result = PageAdapter.getMarketResult() || this._lastBtcResult;
                 if (result) {
-                    Logger.log('Market expired. ' + result.winner + ' wins (beat=' + result.priceToBeat + ' curr=' + result.currentPrice + ')');
+                    Logger.log('Market expired. ' + result.winner + ' wins (beat=$' + result.priceToBeat + ' curr=$' + result.currentPrice + ')');
                     ProfitTracker.resolveMarket(result.winner);
                 } else {
-                    // Fallback: use button prices
+                    // Last fallback: use button prices (unreliable after expiry)
                     const winSide = (upPrice !== null && downPrice !== null && upPrice > downPrice) ? 'UP' : 'DOWN';
-                    Logger.log('Market expired (fallback). Winner: ' + winSide + ' (Up=' + upPrice + 'c, Down=' + downPrice + 'c)');
+                    Logger.log('Market expired (btn fallback). Winner: ' + winSide + ' (Up=' + upPrice + 'c, Down=' + downPrice + 'c)');
                     ProfitTracker.resolveMarket(winSide);
                 }
             }
