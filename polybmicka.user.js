@@ -791,6 +791,7 @@
 
             simBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                // SIM toggle: always works, turns off LIVE
                 this._buyMode = this._buyMode === 'SIM' ? 'OFF' : 'SIM';
                 GM_setValue('buyMode', this._buyMode);
                 updateBtns();
@@ -799,6 +800,11 @@
 
             liveBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                // LIVE only works if SIM is OFF (SIM has priority)
+                if (this._buyMode === 'SIM') {
+                    Logger.log('Cannot enable LIVE while SIM is active. Turn off SIM first.');
+                    return;
+                }
                 this._buyMode = this._buyMode === 'LIVE' ? 'OFF' : 'LIVE';
                 GM_setValue('buyMode', this._buyMode);
                 updateBtns();
