@@ -383,6 +383,21 @@
                 }
             }
 
+            // Safety net: if we have a position and resolve flips to opposite side, buy opposite (1x only)
+            if (btcResult && buyMode !== 'OFF' && ProfitTracker.getCurrentBuy() && !ProfitTracker._safetyBought) {
+                const buy = ProfitTracker.getCurrentBuy();
+                if (buy.side !== btcResult.winner) {
+                    // Resolve flipped! Buy the opposite side as safety net
+                    const oppSide = btcResult.winner; // buy the winning side
+                    const oppPrice = oppSide === 'UP' ? upPrice : downPrice;
+                    if (oppPrice !== null && oppPrice > CONFIG.MIN_PRICE_TO_BUY && oppPrice <= CONFIG.MAX_PRICE_TO_BUY) {
+                        Logger.log('SAFETY NET: resolve flipped to ' + oppSide + '! Buying opposite @ ' + oppPrice + 'c');
+                        ProfitTracker._safetyBought = true;
+                        ProfitTracker._simulateClickAmount(); // click +$1 on PM UI
+                    }
+                }
+            }
+
             // Detect market expiry: resolve sim trade
             if (remainingSecs !== null && remainingSecs <= 0 && ProfitTracker.getCurrentBuy()) {
                 // Determine winner by comparing "Price to beat" vs "Current price"
@@ -611,9 +626,12 @@
             GM_setValue('trades', JSON.stringify(this._trades));
 
             this._currentMarketBuy = null;
+            this._safetyBought = false;
             Overlay.updateProfit(this._totalProfit);
             Overlay.updateSimTrade(null, 0);
         },
+
+        _safetyBought: false,
 
         getProfit() {
             return this._totalProfit;
