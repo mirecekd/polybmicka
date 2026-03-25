@@ -25,7 +25,7 @@
         URL_CHECK_INTERVAL_MS: 1000,
         DOM_RETRY_INTERVAL_MS: 500,
         DOM_RETRY_MAX: 60,
-        VERSION: '0.1.2',
+        VERSION: '0.2.0',
 
         // Trading rules
         MAX_BUY_AMOUNT: 1,              // max $1 per market
@@ -446,6 +446,38 @@
             const potentialProfit = potentialWin - this._currentMarketBuy.amount;
             Logger.log('SIM BUY ' + side + ' @ ' + priceInCents + 'c for $' + this._currentMarketBuy.amount + ' -> potential profit $' + potentialProfit.toFixed(2));
             Overlay.updateSimTrade(this._currentMarketBuy, potentialProfit);
+
+            // Click +$1 on the Polymarket UI to show the amount visually
+            this._simulateClickAmount();
+        },
+
+        _simulateClickAmount() {
+            // First ensure Buy tab is active
+            const { buyTab } = PageAdapter.findBuySellTabs();
+            if (buyTab && buyTab.getAttribute('data-state') !== 'checked') {
+                buyTab.click();
+                Logger.log('Clicked Buy tab');
+            }
+
+            // Then click +$1 button
+            setTimeout(() => {
+                const quickBtns = PageAdapter.findQuickAmountButtons();
+                const oneBtn = quickBtns.find(b => b.label === '+$1');
+                if (oneBtn) {
+                    oneBtn.el.click();
+                    Logger.log('Clicked +$1 on Polymarket UI');
+
+                    // Read back the amount input to confirm
+                    setTimeout(() => {
+                        const amountInput = PageAdapter.findAmountInput();
+                        if (amountInput) {
+                            Logger.log('Amount field shows: ' + (amountInput.value || amountInput.placeholder || '?'));
+                        }
+                    }, 200);
+                } else {
+                    Logger.log('WARNING: +$1 button not found on page');
+                }
+            }, 100);
         },
 
         resolveMarket(winningSide) {
@@ -644,13 +676,28 @@
             container.appendChild(simTrade);
             this._elements.simTrade = simTrade;
 
-            // Profit row
+            // Profit row with CLEAR button
+            const profitWrapper = document.createElement('div');
+            profitWrapper.style.cssText = 'display:flex; gap:4px; margin-bottom:6px; align-items:stretch;';
+
             const profitRow = document.createElement('div');
             profitRow.id = 'pbm-profit';
-            profitRow.style.cssText = 'margin-bottom:6px; padding:4px; background:#0a1a0e; border:1px solid #444; border-radius:4px; font-weight:bold; font-size:13px;';
+            profitRow.style.cssText = 'flex:1; padding:4px; background:#0a1a0e; border:1px solid #444; border-radius:4px; font-weight:bold; font-size:13px;';
             profitRow.textContent = 'Profit: $' + ProfitTracker.getProfit().toFixed(2);
-            container.appendChild(profitRow);
+            profitWrapper.appendChild(profitRow);
             this._elements.profit = profitRow;
+
+            const clearBtn = document.createElement('button');
+            clearBtn.style.cssText = 'padding:2px 6px; border:1px solid #555; border-radius:4px; cursor:pointer; font-size:9px; font-family:monospace; background:#333; color:#888;';
+            clearBtn.textContent = 'CLR';
+            clearBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                ProfitTracker.resetProfit();
+                this.updateProfit(0);
+            });
+            profitWrapper.appendChild(clearBtn);
+
+            container.appendChild(profitWrapper);
 
             // Log area
             const logLabel = document.createElement('div');
