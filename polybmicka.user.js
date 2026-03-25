@@ -774,6 +774,10 @@
                 GM_setValue('freshEnabled', this._freshEnabled);
                 updateFresh();
                 Logger.log('Fresh auto-navigate: ' + (this._freshEnabled ? 'ON' : 'OFF'));
+                // If just enabled and on expired market, navigate immediately
+                if (this._freshEnabled && PageAdapter.clickGoToLiveMarket()) {
+                    Logger.log('Fresh: navigating now!');
+                }
             });
             statusRow.appendChild(freshBtn);
             this._elements.freshBtn = freshBtn;
