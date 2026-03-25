@@ -401,6 +401,24 @@
                 }
             }
 
+            // Auto-navigate to next market when expired and Fresh is ON
+            if (remainingSecs !== null && remainingSecs <= 0 && Overlay._freshEnabled) {
+                const goBtn = PageAdapter.findGoToLiveMarketButton();
+                if (goBtn && !this._freshClicked) {
+                    this._freshClicked = true;
+                    // Wait 30s after expiry before clicking
+                    setTimeout(() => {
+                        const goBtnNow = PageAdapter.findGoToLiveMarketButton();
+                        if (goBtnNow) {
+                            Logger.log('Fresh: auto-navigating to live market');
+                            goBtnNow.click();
+                        }
+                        this._freshClicked = false;
+                    }, 30000);
+                    Logger.log('Fresh: will navigate in 30s...');
+                }
+            }
+
             // Detect market expiry: resolve sim trade
             if (remainingSecs !== null && remainingSecs <= 0 && ProfitTracker.getCurrentBuy()) {
                 // Determine winner by comparing "Price to beat" vs "Current price"
@@ -731,20 +749,30 @@
             statusRow.appendChild(statusText);
             this._elements.status = statusText;
 
+            this._freshEnabled = GM_getValue('freshEnabled', true);
             const freshBtn = document.createElement('button');
-            freshBtn.style.cssText = 'padding:1px 6px; border:1px solid #2a5a2a; border-radius:3px; cursor:pointer; font-size:9px; font-family:monospace; background:#1a3a1a; color:#4a8a4a;';
-            freshBtn.textContent = 'Fresh';
+            freshBtn.style.cssText = 'padding:1px 6px; border:1px solid #555; border-radius:3px; cursor:pointer; font-size:9px; font-family:monospace;';
+            const updateFresh = () => {
+                if (this._freshEnabled) {
+                    freshBtn.textContent = 'Fresh ON';
+                    freshBtn.style.background = '#1a5a1a';
+                    freshBtn.style.color = '#4aff4a';
+                } else {
+                    freshBtn.textContent = 'Fresh OFF';
+                    freshBtn.style.background = '#333';
+                    freshBtn.style.color = '#666';
+                }
+            };
+            updateFresh();
             freshBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const goBtn = PageAdapter.findGoToLiveMarketButton();
-                if (goBtn) {
-                    goBtn.click();
-                    Logger.log('Clicked "Go to live market"');
-                } else {
-                    Logger.log('No "Go to live market" button found');
-                }
+                this._freshEnabled = !this._freshEnabled;
+                GM_setValue('freshEnabled', this._freshEnabled);
+                updateFresh();
+                Logger.log('Fresh auto-navigate: ' + (this._freshEnabled ? 'ON' : 'OFF'));
             });
             statusRow.appendChild(freshBtn);
+            this._elements.freshBtn = freshBtn;
 
             container.appendChild(statusRow);
 
