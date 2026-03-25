@@ -99,11 +99,14 @@
         },
 
         findGoToLiveMarketButton() {
-            const allEls = document.querySelectorAll('a, button, div, span');
-            for (const el of allEls) {
-                if (el.textContent && el.textContent.includes('Go to live market')) {
-                    return el;
-                }
+            // Only match actual buttons with aria-label="Go to live market"
+            const btn = document.querySelector('button[aria-label="Go to live market"]');
+            if (btn) return btn;
+            // Fallback: button containing the exact text
+            const allBtns = document.querySelectorAll('button');
+            for (const b of allBtns) {
+                const p = b.querySelector('p');
+                if (p && p.textContent.trim() === 'Go to live market') return b;
             }
             return null;
         },
@@ -1152,17 +1155,7 @@
             this._domRetryId = setInterval(() => {
                 this._domRetryCount++;
 
-                // Check for historical market
-                const goToLive = PageAdapter.findGoToLiveMarketButton();
-                if (goToLive) {
-                    clearInterval(this._domRetryId);
-                    Overlay.updateStatus('Historical market - click "Go to live market"');
-                    Overlay.updateMarket('Historical @ ' + timeStr);
-                    Logger.log('Historical market detected');
-                    return;
-                }
-
-                // Check for live market with buttons
+                // Check for live market with outcome buttons FIRST (higher priority)
                 const { upBtn, downBtn } = PageAdapter.findUpDownButtons();
                 if (upBtn || downBtn) {
                     clearInterval(this._domRetryId);
