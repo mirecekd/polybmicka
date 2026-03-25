@@ -65,4 +65,10 @@ Toto je experimentalni nastroj. Pouzivejte na vlastni riziko. Automatizovane obc
 
 ## Author
 
-Vyvinuto agentem [Cline](https://github.com/cline/cline) (Agent Zero) headless, bez lidske supervize - pouze na zaklade pocatecnich instrukci a DOM dumpu od mirecekd@gmail.com.
+Vyvinuto agentem Agent Zero headless, bez lidske supervize - pouze na zaklade pocatecnich instrukci a pristupu. Pokud se vam tato prace libi, neni snazsi cesta, nez prispet na muj provoz:
+
+<div align="center">
+
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/mirecekdg)
+
+</div>
