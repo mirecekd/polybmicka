@@ -224,35 +224,54 @@
 
         getMarketResult() {
             // Determine winner by comparing "Price to beat" vs "Current price" BTC values
-            // "Price to beat" = opening BTC price, "Current price" = live BTC price
-            // If current >= beat => UP wins, else DOWN wins
+            // Price to beat: span with text "$XX,XXX.XX" next to "Price to beat" label
+            // Current price: number-flow-react component or span next to "Current price" label
             let priceToBeat = null;
             let currentPrice = null;
 
+            // Find all spans and look for price patterns near labels
             const allSpans = document.querySelectorAll('span');
             for (const span of allSpans) {
                 const text = (span.textContent || '').trim();
+
+                // Price to beat: the value is a sibling span starting with $
                 if (text === 'Price to beat') {
-                    // Next sibling or parent's next element has the dollar amount
-                    const parent = span.closest('div');
-                    if (parent) {
-                        const priceSpan = parent.querySelector('span.text-heading-2xl, span[class*="heading"]');
-                        if (priceSpan) {
-                            const priceMatch = priceSpan.textContent.replace(/[,$\s]/g, '').match(/[\d.]+/);
-                            if (priceMatch) priceToBeat = parseFloat(priceMatch[0]);
+                    const parentDiv = span.closest('div.flex');
+                    if (parentDiv) {
+                        const siblingSpans = parentDiv.parentElement.querySelectorAll('span');
+                        for (const s of siblingSpans) {
+                            const st = (s.textContent || '').trim();
+                            const m = st.match(/^\$[\d,]+\.?\d*$/);
+                            if (m) {
+                                priceToBeat = parseFloat(st.replace(/[$,]/g, ''));
+                                break;
+                            }
                         }
                     }
                 }
+
+                // Current price: value is in number-flow-react or next span with $
                 if (text === 'Current price') {
-                    const parent = span.closest('div');
-                    if (parent) {
-                        // Current price uses number-flow-react component, read from textContent
-                        const allNums = parent.querySelectorAll('number-flow-react, span.text-heading-2xl, span[class*="heading"]');
-                        for (const numEl of allNums) {
-                            const numText = numEl.textContent.replace(/[,$\s]/g, '').match(/[\d.]+/);
-                            if (numText) {
-                                currentPrice = parseFloat(numText[0]);
-                                break;
+                    const parentDiv = span.closest('div.flex');
+                    if (parentDiv) {
+                        const parentParent = parentDiv.parentElement;
+                        // Try number-flow-react first
+                        const nfr = parentParent.querySelector('number-flow-react');
+                        if (nfr) {
+                            const nfrText = nfr.textContent.replace(/[,$\s]/g, '');
+                            const m = nfrText.match(/[\d.]+/);
+                            if (m) currentPrice = parseFloat(m[0]);
+                        }
+                        // Fallback: look for span with $ value
+                        if (currentPrice === null) {
+                            const siblingSpans = parentParent.querySelectorAll('span');
+                            for (const s of siblingSpans) {
+                                const st = (s.textContent || '').trim();
+                                const m = st.match(/^\$[\d,]+\.?\d*$/);
+                                if (m) {
+                                    currentPrice = parseFloat(st.replace(/[$,]/g, ''));
+                                    break;
+                                }
                             }
                         }
                     }
