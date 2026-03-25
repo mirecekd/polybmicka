@@ -30,6 +30,7 @@
         // Trading rules
         MAX_BUY_AMOUNT: 1,              // max $1 per market
         MIN_PRICE_TO_BUY: 75,           // only buy if price > 75c
+        MAX_PRICE_TO_BUY: 97,           // safety: don't buy above 97c (too expensive, no profit)
         MAX_REMAINING_SECS: 150,        // only buy if remaining time < 2:30 (150s)
 
         // Buy modes: 'OFF' | 'SIM' | 'LIVE'
@@ -471,11 +472,11 @@
             const upPrice = latest ? latest.up : null;
             const downPrice = latest ? latest.down : null;
 
-            // Rule: only buy if price > 75c (strong conviction side)
-            if (direction === 'UP' && upPrice !== null && upPrice > CONFIG.MIN_PRICE_TO_BUY && consecutive >= 3) {
+            // Rule: only buy if price > 75c AND < 97c (strong conviction but not too expensive)
+            if (direction === 'UP' && upPrice !== null && upPrice > CONFIG.MIN_PRICE_TO_BUY && upPrice <= CONFIG.MAX_PRICE_TO_BUY && consecutive >= 3) {
                 return 'SIM_BUY_UP $' + CONFIG.MAX_BUY_AMOUNT + ' @ ' + upPrice + 'c (streak ' + consecutive + ', ' + Math.floor(remainingMins * 60) + 's left)';
             }
-            if (direction === 'DOWN' && downPrice !== null && downPrice > CONFIG.MIN_PRICE_TO_BUY && consecutive >= 3) {
+            if (direction === 'DOWN' && downPrice !== null && downPrice > CONFIG.MIN_PRICE_TO_BUY && downPrice <= CONFIG.MAX_PRICE_TO_BUY && consecutive >= 3) {
                 return 'SIM_BUY_DOWN $' + CONFIG.MAX_BUY_AMOUNT + ' @ ' + downPrice + 'c (streak ' + consecutive + ', ' + Math.floor(remainingMins * 60) + 's left)';
             }
 
