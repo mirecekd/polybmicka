@@ -758,11 +758,11 @@
 
         _updateBuyBtn(btn) {
             if (this._buyEnabled) {
-                btn.textContent = 'BUY: ARMED';
-                btn.style.background = '#cc4400';
-                btn.style.color = '#fff';
+                btn.textContent = 'SIM BUY: ON';
+                btn.style.background = '#cc8800';
+                btn.style.color = '#000';
             } else {
-                btn.textContent = 'BUY: OFF';
+                btn.textContent = 'SIM BUY: OFF';
                 btn.style.background = '#222';
                 btn.style.color = '#666';
             }
