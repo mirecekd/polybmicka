@@ -39,7 +39,7 @@ Tampermonkey skript, ktery na Polymarket strance BTC Up/Down 5-minute marketu:
 |----------|---------|
 | Max nakup | $1 za market |
 | Min cena | >75c |
-| Max cas | <2 min do konce |
+| Max cas | <3 min do konce |
 | Min streak | >=3 consecutive |
 
 ## Disclaimer

@@ -19,7 +19,7 @@
     // CONFIG
     // =========================================================================
     const CONFIG = {
-        SAMPLE_INTERVAL_MS: 500,
+        SAMPLE_INTERVAL_MS: 100,
         TREND_WINDOW_MS: 10000,
         LOG_MAX_LINES: 100,
         URL_CHECK_INTERVAL_MS: 1000,
@@ -30,7 +30,7 @@
         // Trading rules
         MAX_BUY_AMOUNT: 1,              // max $1 per market
         MIN_PRICE_TO_BUY: 75,           // only buy if price > 75c
-        MAX_REMAINING_MINS: 2,          // only buy if remaining time < 2 minutes
+        MAX_REMAINING_MINS: 3,          // only buy if remaining time < 3 minutes
     };
 
     // =========================================================================
