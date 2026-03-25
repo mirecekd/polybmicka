@@ -25,7 +25,7 @@
         URL_CHECK_INTERVAL_MS: 1000,
         DOM_RETRY_INTERVAL_MS: 500,
         DOM_RETRY_MAX: 60,
-        VERSION: '0.3.2',
+        VERSION: '0.3.3',
 
         // Trading rules
         MAX_BUY_AMOUNT: 1,              // max $1 per market
@@ -757,25 +757,59 @@
             container.appendChild(signal);
             this._elements.signal = signal;
 
-            // BUY ENABLE button row
+            // BUY MODE: two separate buttons SIM and LIVE
             const buyRow = document.createElement('div');
-            buyRow.style.cssText = 'display:flex; gap:6px; margin-bottom:6px; align-items:center;';
+            buyRow.style.cssText = 'display:flex; gap:4px; margin-bottom:6px; align-items:center;';
 
             this._buyMode = GM_getValue('buyMode', 'OFF');
-            const buyBtn = document.createElement('button');
-            buyBtn.style.cssText = 'padding:3px 12px; border:1px solid #555; border-radius:4px; cursor:pointer; font-size:11px; font-family:monospace; flex:1;';
-            this._updateBuyBtn(buyBtn);
-            buyBtn.addEventListener('click', (e) => {
+
+            const simBtn = document.createElement('button');
+            simBtn.style.cssText = 'padding:3px 8px; border:1px solid #555; border-radius:4px; cursor:pointer; font-size:11px; font-family:monospace; flex:1;';
+            const liveBtn = document.createElement('button');
+            liveBtn.style.cssText = 'padding:3px 8px; border:1px solid #555; border-radius:4px; cursor:pointer; font-size:11px; font-family:monospace; flex:1;';
+
+            const updateBtns = () => {
+                if (this._buyMode === 'SIM') {
+                    simBtn.textContent = 'SIM: ON';
+                    simBtn.style.background = '#cc8800';
+                    simBtn.style.color = '#000';
+                } else {
+                    simBtn.textContent = 'SIM: OFF';
+                    simBtn.style.background = '#222';
+                    simBtn.style.color = '#666';
+                }
+                if (this._buyMode === 'LIVE') {
+                    liveBtn.textContent = 'LIVE: ON';
+                    liveBtn.style.background = '#cc0000';
+                    liveBtn.style.color = '#fff';
+                } else {
+                    liveBtn.textContent = 'LIVE: OFF';
+                    liveBtn.style.background = '#222';
+                    liveBtn.style.color = '#666';
+                }
+            };
+
+            simBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const modes = CONFIG.BUY_MODES;
-                const idx = modes.indexOf(this._buyMode);
-                this._buyMode = modes[(idx + 1) % modes.length];
+                this._buyMode = this._buyMode === 'SIM' ? 'OFF' : 'SIM';
                 GM_setValue('buyMode', this._buyMode);
-                this._updateBuyBtn(buyBtn);
+                updateBtns();
                 Logger.log('Buy mode: ' + this._buyMode);
             });
-            buyRow.appendChild(buyBtn);
-            this._elements.buyBtn = buyBtn;
+
+            liveBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this._buyMode = this._buyMode === 'LIVE' ? 'OFF' : 'LIVE';
+                GM_setValue('buyMode', this._buyMode);
+                updateBtns();
+                Logger.log('Buy mode: ' + this._buyMode);
+            });
+
+            updateBtns();
+            buyRow.appendChild(simBtn);
+            buyRow.appendChild(liveBtn);
+            this._elements.simBtn = simBtn;
+            this._elements.liveBtn = liveBtn;
             container.appendChild(buyRow);
 
             // Sim trade info row
