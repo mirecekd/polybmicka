@@ -1,0 +1,14 @@
+PolyBMiCka - Polymarket Bitcin Micro Cycle kliking automat
+
+Budes programovat tampermonkey rozsireni pro google chrome a Polymarket
+
+Musis byt v aktualnim 5min bitcononvem trhu a na boku je karta buy/sell - podivej se na screenshot.
+
+Tampermonkey musi chytat online cenu, ktera je na tlaticku up/down (je vzdy za up a down polohou).
+
+Bude pocitat trend a pokud napr. 10s pojede btc jednim smerem a bude se zvysovat cena podilu, tak se rychle za 1$ koupi - to ze bude amount $1,
+tim se vytvori nakup, pokud cena poleti jeste dal, pak se okamzite preklikne na kartu sell a cena jeste leti a jako max se proda ta pozice
+bude z toho minimalni zisk, ale muze se to udelat treba 10x za sebou a z toho uz by mohl byt nejaky vytezek, ne?
+
+Ze zacatku naprogramujeme to, ze budes vedle te karty mit zapinac/vypinac celeho systemu a pod tim bude trend, kterym btc na polymarketu
+jde a kdy a za kolik bys koupil - karty muzes kline preklikavat, at vidime a zaznamenavej ceny 
