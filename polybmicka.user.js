@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PolyBMiCka - Polymarket Bitcoin Micro Cycle Monitor
 // @namespace    https://github.com/mirdvorak/polybmicka
-// @version      0.4.1
+// @version      0.4.2
 // @description  Monitors Bitcoin Up/Down 5-minute markets on Polymarket - Phase 1: observation only
 // @author       Miroslav Dvorak
 // @match        https://polymarket.com/*
@@ -25,7 +25,7 @@
         URL_CHECK_INTERVAL_MS: 1000,
         DOM_RETRY_INTERVAL_MS: 500,
         DOM_RETRY_MAX: 60,
-        VERSION: '0.4.1',
+        VERSION: '0.4.2',
 
         // Trading rules
         MAX_BUY_AMOUNT: 1,              // max $1 per market
