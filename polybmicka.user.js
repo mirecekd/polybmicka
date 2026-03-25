@@ -969,7 +969,7 @@
             const signal = document.createElement('div');
             signal.id = 'pbm-signal';
             signal.style.cssText = 'margin-bottom:6px; padding:4px; background:#111; border-radius:4px; color:#ffcc00;';
-            signal.textContent = 'Signal: none';
+            signal.textContent = 'S: none';
             container.appendChild(signal);
             this._elements.signal = signal;
 
@@ -1168,7 +1168,7 @@
             }
             if (this._elements.signal) {
                 if (trend.signal) {
-                    this._elements.signal.textContent = 'Signal: ' + trend.signal;
+                    this._elements.signal.textContent = 'S: ' + trend.signal;
                     this._elements.signal.style.color = '#ffcc00';
                     // Only log when signal changes (deduplicate at 100ms sampling)
                     if (this._lastSignal !== trend.signal) {
@@ -1176,7 +1176,7 @@
                         this._lastSignal = trend.signal;
                     }
                 } else {
-                    this._elements.signal.textContent = 'Signal: none';
+                    this._elements.signal.textContent = 'S: none';
                     this._elements.signal.style.color = '#666';
                     if (this._lastSignal !== null) {
                         this._lastSignal = null;
