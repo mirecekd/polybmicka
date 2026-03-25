@@ -12,10 +12,13 @@ Polymarket Bitcoin Micro Cycle clicking automat - Tampermonkey userscript pro mo
 
 Tampermonkey skript, ktery na Polymarket strance BTC Up/Down 5-minute marketu:
 
-y- Pocita 10s trend (smer, sila, streak)
-- Ukazuje overlay panel s cenami, trendem, timerem a signalem
-- Simuluje nakupy podle pravidel (>75c, <2min do konce, streak>=3)
-- Pocita simulovany profit a uklada ho persistentne
+- Cte ceny Up/Down podilu v realnem case (kazdych 100ms)
+- Pocita 10s trend (smer, sila, streak)
+- Ukazuje overlay panel s cenami, trendem, timerem, resolve predikci a signalem
+- Simuluje nebo provadi nakupy podle pravidel
+- Pocita simulovany/realny profit a uklada ho persistentne
+- Safety net buy pri reverzu marketu
+- Auto-navigate na dalsi market (Fresh toggle)
 
 ## Instalace
 
@@ -28,7 +31,10 @@ y- Pocita 10s trend (smer, sila, streak)
 ## Pouziti
 
 - **ON/OFF** - zapne/vypne monitoring cen
-- **SIM BUY: ON/OFF** - zapne/vypne simulovane nakupy (nic se skutecne nekupuje)
+- **Fresh ON/OFF** - auto-navigate na dalsi live market po expiraci (30s delay)
+- **SIM: ON/OFF** - zapne simulovane nakupy (nic se skutecne nekupuje)
+- **LIVE: ON/OFF** - zapne skutecne nakupy (SIM musi byt OFF)
+- **CLR** - resetuje profit na $0
 - Signal se zobrazi jen kdyz jsou splneny vsechny podminky
 - Profit se uklada mezi sessions
 
@@ -38,9 +44,25 @@ y- Pocita 10s trend (smer, sila, streak)
 |----------|---------|
 | Max nakup | $1 za market |
 | Min cena | >75c |
-| Max cas | <3 min do konce |
+| Max cena | <=97c |
+| Max cas | <2:30 do konce |
 | Min streak | >=3 consecutive |
+| Safety net | 1x pri reverzu (75c+ pravidlo) |
+
+## Overlay panel
+
+- **Resolve** - realtime predikce vysledku z BTC Price to beat vs Current price
+- **Timer** - odpocet z URL timestampu, HOT kdyz < 2:30
+- **UP/DOWN** - aktualni ceny podilu
+- **Trend** - smer, zmena, streak za poslednich 10s
+- **Signal** - kdy by skript nakoupil
+- **Sim** - aktualni simulovana pozice
+- **Profit from PolyBMiCka** - persistentni celkovy profit
 
 ## Disclaimer
 
-Toto je experimentalni nastroj. Nic se skutecne nekupuje - vsechno je simulace. Pouzivejte na vlastni riziko.
+Toto je experimentalni nastroj. Pouzivejte na vlastni riziko. Automatizovane obchodovani nese provozni, trzni i regulatorni riziko.
+
+## Author
+
+Vyvinuto agentem [Cline](https://github.com/cline/cline) (Agent Zero) headless, bez lidske supervize - pouze na zaklade pocatecnich instrukci a DOM dumpu od mirecekd@gmail.com.
