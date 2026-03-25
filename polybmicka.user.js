@@ -403,6 +403,7 @@
                     if (oppPrice !== null && oppPrice > CONFIG.MIN_PRICE_TO_BUY && oppPrice <= CONFIG.MAX_PRICE_TO_BUY) {
                         Logger.log('SAFETY NET: resolve flipped to ' + oppSide + '! Buying opposite @ ' + oppPrice + 'c');
                         ProfitTracker._safetyBought = true;
+                        ProfitTracker._safetyBuy = { side: oppSide, price: oppPrice, amount: CONFIG.MAX_BUY_AMOUNT };
                         ProfitTracker._simulateClickAmount(oppSide); // click outcome + +$1 on PM UI
                     }
                 }
@@ -650,13 +651,32 @@
                 Logger.log('SIM LOSE. ' + buy.side + ' @ ' + buy.price + 'c -> lost $' + buy.amount);
             }
 
-            this._totalProfit += profit;
+            // Also account for safety net buy if it exists
+            let safetyProfit = 0;
+            if (this._safetyBuy) {
+                const sb = this._safetyBuy;
+                if (sb.side === winningSide) {
+                    const sPayout = (100 / sb.price) * sb.amount;
+                    safetyProfit = sPayout - sb.amount;
+                    Logger.log('SAFETY WIN! ' + sb.side + ' @ ' + sb.price + 'c -> +$' + safetyProfit.toFixed(2));
+                } else {
+                    safetyProfit = -sb.amount;
+                    Logger.log('SAFETY LOSE. ' + sb.side + ' @ ' + sb.price + 'c -> -$' + sb.amount);
+                }
+                profit += safetyProfit;
+            }
+
+            const totalMarketProfit = profit;
+            Logger.log('Market total P&L: $' + totalMarketProfit.toFixed(2) + ' (main: $' + (profit - safetyProfit).toFixed(2) + ', safety: $' + safetyProfit.toFixed(2) + ')');
+
+            this._totalProfit += totalMarketProfit;
             GM_setValue('totalProfit', this._totalProfit);
 
             this._trades.push({
                 side: buy.side,
                 price: buy.price,
-                profit: profit,
+                profit: totalMarketProfit,
+                safetyBuy: this._safetyBuy,
                 ts: buy.ts,
                 resolved: Date.now(),
             });
@@ -664,6 +684,7 @@
 
             this._currentMarketBuy = null;
             this._safetyBought = false;
+            this._safetyBuy = null;
             Overlay.updateProfit(this._totalProfit);
             Overlay.updateSimTrade(null, 0);
         },
@@ -709,7 +730,7 @@
                 'top: 80px',
                 'right: 10px',
                 'width: 280px',
-                'background: #1a1a2e',
+                'background: rgb(58, 58, 58)',
                 'color: #e0e0e0',
                 'border: 1px solid #333',
                 'border-radius: 8px',
