@@ -423,8 +423,8 @@
             // Buy logic: if mode is SIM or LIVE and signal fires
             const buyMode = Overlay.getBuyMode();
             if (trend.signal && buyMode !== 'OFF' && !ProfitTracker.getCurrentBuy()) {
-                // Cash safety: don't trade if cash < MIN_CASH_TO_TRADE
-                if (this._lastCash !== null && this._lastCash < CONFIG.MIN_CASH_TO_TRADE) {
+                // Cash safety: don't trade in LIVE mode if cash < MIN_CASH_TO_TRADE (SIM ignores cash)
+                if (buyMode === 'LIVE' && this._lastCash !== null && this._lastCash < CONFIG.MIN_CASH_TO_TRADE) {
                     // Only log once per market
                     if (!this._cashLowLogged) {
                         Logger.log('CASH LOW ($' + this._lastCash.toFixed(2) + ' < $' + CONFIG.MIN_CASH_TO_TRADE + ') - skipping trade');
