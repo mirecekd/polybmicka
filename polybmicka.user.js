@@ -327,16 +327,26 @@
         },
 
         getCashBalance() {
-            // Scrape cash balance from the portfolio link in top nav
-            // DOM: a[href="/portfolio"] button > p.text-heading-lg containing "$XX.XX"
-            const link = document.querySelector('a[href="/portfolio"]');
-            if (!link) return null;
-            const paragraphs = link.querySelectorAll('p');
-            for (const p of paragraphs) {
-                const text = (p.textContent || '').trim();
-                const match = text.match(/^\$[\d,]+\.?\d*$/);
-                if (match) {
-                    return parseFloat(text.replace(/[$,]/g, ''));
+            // Scrape cash balance from the "Cash" link in top nav
+            // There are 2 a[href="/portfolio"] links: Portfolio and Cash
+            // Cash one: a[href="/portfolio"] > button > div > p "Cash" + p "$XX.XX"
+            const links = document.querySelectorAll('a[href="/portfolio"]');
+            for (const link of links) {
+                const paragraphs = link.querySelectorAll('p');
+                let isCash = false;
+                let cashValue = null;
+                for (const p of paragraphs) {
+                    const text = (p.textContent || '').trim();
+                    if (text === 'Cash') {
+                        isCash = true;
+                    }
+                    const match = text.match(/^\$[\d,]+\.?\d*$/);
+                    if (match) {
+                        cashValue = parseFloat(text.replace(/[$,]/g, ''));
+                    }
+                }
+                if (isCash && cashValue !== null) {
+                    return cashValue;
                 }
             }
             return null;
