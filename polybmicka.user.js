@@ -1052,9 +1052,8 @@
             const diff = result.currentPrice - result.priceToBeat;
             const diffStr = (diff >= 0 ? '+' : '') + diff.toFixed(2);
             const color = result.winner === 'UP' ? '#00cc66' : '#ff4444';
-            const arrow = result.winner === 'UP' ? ' ^' : ' v';
             this._elements.resolve.style.color = color;
-            this._elements.resolve.textContent = 'Resolve: ' + result.winner + arrow + ' ' + diffStr + ' ($' + result.currentPrice.toFixed(2) + ')';
+            this._elements.resolve.textContent = 'Resolve: ' + result.winner + ' ' + diffStr + ' ($' + result.currentPrice.toFixed(2) + ')';
         },
 
         updateProfit(total) {
