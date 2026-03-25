@@ -906,8 +906,10 @@
                 GM_setValue('enabled', this._enabled);
                 this._updateToggleBtn(toggleBtn);
                 if (this._enabled) {
+                    this._expandBody();
                     App.startMonitoring();
                 } else {
+                    this._collapseBody();
                     App.stopMonitoring();
                 }
             });
@@ -1184,9 +1186,27 @@
 
             document.body.appendChild(container);
             this._container = container;
+            this._bodyElements = container.querySelectorAll(':scope > div:not(:first-child), :scope > pre');
+
+            // Start collapsed if OFF
+            if (!this._enabled) {
+                this._collapseBody();
+            }
 
             this._updateRules();
             Logger.log('Overlay initialized');
+        },
+
+        _collapseBody() {
+            if (this._bodyElements) {
+                this._bodyElements.forEach(el => el.style.display = 'none');
+            }
+        },
+
+        _expandBody() {
+            if (this._bodyElements) {
+                this._bodyElements.forEach(el => el.style.display = '');
+            }
         },
 
         _getMaxSecs() {
