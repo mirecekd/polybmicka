@@ -1091,7 +1091,7 @@
                 this._elements.simTrade.style.color = '#aaa';
                 return;
             }
-            this._elements.simTrade.textContent = 'Sim: ' + buy.side + ' @ ' + buy.price + 'c $' + buy.amount + ' -> pot. +$' + potentialProfit.toFixed(2);
+            this._elements.simTrade.innerHTML = buy.side + ' @ ' + buy.price + 'c $' + buy.amount + '<br>pot. profit: +$' + potentialProfit.toFixed(2);
             this._elements.simTrade.style.color = '#ffcc00';
         },
 
