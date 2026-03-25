@@ -25,7 +25,7 @@
         URL_CHECK_INTERVAL_MS: 1000,
         DOM_RETRY_INTERVAL_MS: 500,
         DOM_RETRY_MAX: 60,
-        VERSION: '0.3.0',
+        VERSION: '0.3.1',
 
         // Trading rules
         MAX_BUY_AMOUNT: 1,              // max $1 per market
@@ -539,6 +539,21 @@
                         const amountInput = PageAdapter.findAmountInput();
                         if (amountInput) {
                             Logger.log('Amount field shows: ' + (amountInput.value || amountInput.placeholder || '?'));
+                        }
+
+                        // LIVE MODE: click the blue "Buy Up" / "Buy Down" trade button
+                        if (Overlay.getBuyMode() === 'LIVE') {
+                            setTimeout(() => {
+                                const tradeBtn = PageAdapter.findTradeButton();
+                                if (tradeBtn) {
+                                    const tradeBtnText = tradeBtn.textContent.trim();
+                                    Logger.log('LIVE BUY: clicking trade button "' + tradeBtnText + '"');
+                                    tradeBtn.click();
+                                    Logger.log('LIVE BUY: trade button clicked!');
+                                } else {
+                                    Logger.log('LIVE BUY ERROR: trade button not found!');
+                                }
+                            }, 300);
                         }
                     }, 200);
                 } else {
