@@ -250,29 +250,34 @@
                     }
                 }
 
-                // Current price: value is in number-flow-react or next span with $
+                // Current price: value is in number-flow-react (shadow DOM) or sibling span
                 if (text === 'Current price') {
                     const parentDiv = span.closest('div.flex');
                     if (parentDiv) {
                         const parentParent = parentDiv.parentElement;
-                        // Try number-flow-react first
+                        // Try number-flow-react: read --current from digit spans
                         const nfr = parentParent.querySelector('number-flow-react');
-                        if (nfr) {
+                        if (nfr && nfr.shadowRoot) {
+                            const digits = nfr.shadowRoot.querySelectorAll('.digit');
+                            let numStr = '';
+                            for (const d of digits) {
+                                const cur = d.style.getPropertyValue('--current');
+                                if (cur !== '') numStr += cur;
+                            }
+                            // Insert decimal: number-flow has integer + fraction sections
+                            const intSection = nfr.shadowRoot.querySelector('[part~="integer"]');
+                            const fracSection = nfr.shadowRoot.querySelector('[part~="fraction"]');
+                            if (intSection && fracSection) {
+                                const intDigits = intSection.querySelectorAll('.digit').length;
+                                numStr = numStr.slice(0, intDigits) + '.' + numStr.slice(intDigits);
+                            }
+                            if (numStr) currentPrice = parseFloat(numStr);
+                        }
+                        // Fallback: textContent (may work if shadow DOM is open)
+                        if (currentPrice === null && nfr) {
                             const nfrText = nfr.textContent.replace(/[,$\s]/g, '');
                             const m = nfrText.match(/[\d.]+/);
                             if (m) currentPrice = parseFloat(m[0]);
-                        }
-                        // Fallback: look for span with $ value
-                        if (currentPrice === null) {
-                            const siblingSpans = parentParent.querySelectorAll('span');
-                            for (const s of siblingSpans) {
-                                const st = (s.textContent || '').trim();
-                                const m = st.match(/^\$[\d,]+\.?\d*$/);
-                                if (m) {
-                                    currentPrice = parseFloat(st.replace(/[$,]/g, ''));
-                                    break;
-                                }
-                            }
                         }
                     }
                 }
