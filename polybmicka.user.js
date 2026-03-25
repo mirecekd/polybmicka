@@ -31,7 +31,9 @@
         MAX_BUY_AMOUNT: 1,              // max $1 per market
         MIN_PRICE_TO_BUY: 75,           // only buy if price > 75c
         MAX_PRICE_TO_BUY: 97,           // safety: don't buy above 97c (too expensive, no profit)
-        MAX_REMAINING_SECS: 150,        // only buy if remaining time < 2:30 (150s)
+        MAX_REMAINING_SECS: 90,         // only buy if remaining time < 1:30 (90s)
+        EARLY_SECS: 150,                // Early mode: < 2:30 (150s)
+        EARLIER_SECS: 210,              // Earlier mode: < 3:30 (210s)
 
         // Safety limits
         PROFIT_KILLSWITCH: -5,          // if profit drops below -$5, turn main switch OFF
@@ -581,7 +583,7 @@
 
             // Rule: only trade when < 2:30 (or 3:30 if Early) remaining
             const remainingSecs = PageAdapter.getRemainingSeconds();
-            const maxSecs = Overlay._earlyEnabled ? 210 : CONFIG.MAX_REMAINING_SECS;
+            const maxSecs = Overlay._getMaxSecs();
             if (remainingSecs === null || remainingSecs >= maxSecs) {
                 return null; // too early, wait
             }
@@ -887,7 +889,8 @@
             container.appendChild(statusRow);
 
             // Market info with Early button
-            this._earlyEnabled = GM_getValue('earlyEnabled', false);
+            // _earlyMode: 0=OFF (1:30), 1=Early (2:30), 2=Earlier (3:30)
+            this._earlyMode = GM_getValue('earlyMode', 0);
             const marketRow = document.createElement('div');
             marketRow.style.cssText = 'display:flex; gap:4px; align-items:center; margin-bottom:6px;';
             const marketInfo = document.createElement('span');
@@ -898,18 +901,28 @@
 
             const earlyBtn = document.createElement('button');
             earlyBtn.style.cssText = 'padding:1px 6px; border:1px solid #555; border-radius:3px; cursor:pointer; font-size:9px; font-family:monospace;';
+            const earlyLabels = ['1:30', 'Early', 'Earlier'];
             const updateEarly = () => {
-                earlyBtn.textContent = 'Early';
-                earlyBtn.style.background = this._earlyEnabled ? '#5a3a1a' : '#333';
-                earlyBtn.style.color = this._earlyEnabled ? '#ffaa44' : '#666';
+                earlyBtn.textContent = earlyLabels[this._earlyMode];
+                if (this._earlyMode === 0) {
+                    earlyBtn.style.background = '#333';
+                    earlyBtn.style.color = '#666';
+                } else if (this._earlyMode === 1) {
+                    earlyBtn.style.background = '#5a3a1a';
+                    earlyBtn.style.color = '#ffaa44';
+                } else {
+                    earlyBtn.style.background = '#5a1a1a';
+                    earlyBtn.style.color = '#ff6644';
+                }
             };
             updateEarly();
             earlyBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                this._earlyEnabled = !this._earlyEnabled;
-                GM_setValue('earlyEnabled', this._earlyEnabled);
+                this._earlyMode = (this._earlyMode + 1) % 3;
+                GM_setValue('earlyMode', this._earlyMode);
                 updateEarly();
-                Logger.log('Early: ' + (this._earlyEnabled ? 'ON (3:30)' : 'OFF (2:30)'));
+                const secs = this._getMaxSecs();
+                Logger.log('Timing: <' + Math.floor(secs / 60) + ':' + String(secs % 60).padStart(2, '0') + ' (' + earlyLabels[this._earlyMode] + ')');
                 this._updateRules();
             });
             marketRow.appendChild(earlyBtn);
@@ -1096,10 +1109,16 @@
             Logger.log('Overlay initialized');
         },
 
+        _getMaxSecs() {
+            if (this._earlyMode === 2) return CONFIG.EARLIER_SECS;
+            if (this._earlyMode === 1) return CONFIG.EARLY_SECS;
+            return CONFIG.MAX_REMAINING_SECS;
+        },
+
         _updateRules() {
             const rulesEl = this._container ? this._container.querySelector('#pbm-rules') : null;
             if (!rulesEl) return;
-            const maxSecs = this._earlyEnabled ? 210 : CONFIG.MAX_REMAINING_SECS;
+            const maxSecs = this._getMaxSecs();
             const mins = Math.floor(maxSecs / 60);
             const secs = String(maxSecs % 60).padStart(2, '0');
             rulesEl.textContent = 'Rules: >' + CONFIG.MIN_PRICE_TO_BUY + 'c, <' + mins + ':' + secs + ', $' + CONFIG.MAX_BUY_AMOUNT;
@@ -1144,7 +1163,7 @@
             const secs = remainingSecs % 60;
             const timeStr = mins + ':' + String(secs).padStart(2, '0');
 
-            const hotThreshold = this._earlyEnabled ? 210 : CONFIG.MAX_REMAINING_SECS;
+            const hotThreshold = this._getMaxSecs();
             if (remainingSecs <= 0) {
                 timerSpan.textContent = 'EXPIRED';
                 timerSpan.style.color = '#ff4444';
