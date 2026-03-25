@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PolyBMiCka - Polymarket Bitcoin Micro Cycle Monitor
 // @namespace    https://github.com/mirdvorak/polybmicka
-// @version      0.1.0
+// @version      0.4.1
 // @description  Monitors Bitcoin Up/Down 5-minute markets on Polymarket - Phase 1: observation only
 // @author       Miroslav Dvorak
 // @match        https://polymarket.com/*
@@ -25,13 +25,17 @@
         URL_CHECK_INTERVAL_MS: 1000,
         DOM_RETRY_INTERVAL_MS: 500,
         DOM_RETRY_MAX: 60,
-        VERSION: '0.4.0',
+        VERSION: '0.4.1',
 
         // Trading rules
         MAX_BUY_AMOUNT: 1,              // max $1 per market
         MIN_PRICE_TO_BUY: 75,           // only buy if price > 75c
         MAX_PRICE_TO_BUY: 97,           // safety: don't buy above 97c (too expensive, no profit)
         MAX_REMAINING_SECS: 150,        // only buy if remaining time < 2:30 (150s)
+
+        // Safety limits
+        PROFIT_KILLSWITCH: -5,          // if profit drops below -$5, turn main switch OFF
+        MIN_CASH_TO_TRADE: 12,          // don't trade if cash balance < $12
 
         // Buy modes: 'OFF' | 'SIM' | 'LIVE'
         BUY_MODES: ['OFF', 'SIM', 'LIVE'],
@@ -321,6 +325,22 @@
             if (secs === null) return null;
             return secs / 60;
         },
+
+        getCashBalance() {
+            // Scrape cash balance from the portfolio link in top nav
+            // DOM: a[href="/portfolio"] button > p.text-heading-lg containing "$XX.XX"
+            const link = document.querySelector('a[href="/portfolio"]');
+            if (!link) return null;
+            const paragraphs = link.querySelectorAll('p');
+            for (const p of paragraphs) {
+                const text = (p.textContent || '').trim();
+                const match = text.match(/^\$[\d,]+\.?\d*$/);
+                if (match) {
+                    return parseFloat(text.replace(/[$,]/g, ''));
+                }
+            }
+            return null;
+        },
     };
 
     // =========================================================================
@@ -378,6 +398,14 @@
             // Update UI
             Overlay.updatePrices(upPrice, downPrice);
 
+            // Scrape cash balance (throttled: every ~1s, not every 100ms)
+            if (!this._lastCashCheck || Date.now() - this._lastCashCheck > 1000) {
+                this._lastCashCheck = Date.now();
+                const cash = PageAdapter.getCashBalance();
+                Overlay.updateCash(cash);
+                this._lastCash = cash;
+            }
+
             // Calculate trend
             const trend = TrendEngine.calculate(this._samples);
             Overlay.updateTrend(trend);
@@ -385,11 +413,21 @@
             // Buy logic: if mode is SIM or LIVE and signal fires
             const buyMode = Overlay.getBuyMode();
             if (trend.signal && buyMode !== 'OFF' && !ProfitTracker.getCurrentBuy()) {
+                // Cash safety: don't trade if cash < MIN_CASH_TO_TRADE
+                if (this._lastCash !== null && this._lastCash < CONFIG.MIN_CASH_TO_TRADE) {
+                    // Only log once per market
+                    if (!this._cashLowLogged) {
+                        Logger.log('CASH LOW ($' + this._lastCash.toFixed(2) + ' < $' + CONFIG.MIN_CASH_TO_TRADE + ') - skipping trade');
+                        this._cashLowLogged = true;
+                    }
+                } else {
                 // Parse direction from signal
                 const side = trend.signal.includes('BUY_UP') ? 'UP' : 'DOWN';
                 const price = side === 'UP' ? upPrice : downPrice;
                 if (price !== null) {
                     ProfitTracker.simulateBuy(side, price);
+                }
+                this._cashLowLogged = false; // reset for next signal
                 }
             }
 
@@ -687,6 +725,11 @@
             this._safetyBuy = null;
             Overlay.updateProfit(this._totalProfit);
             Overlay.updateSimTrade(null, 0);
+
+            // Profit killswitch: if total profit drops below threshold, turn everything OFF
+            if (this._totalProfit < CONFIG.PROFIT_KILLSWITCH) {
+                Overlay.disableMainSwitch('profit $' + this._totalProfit.toFixed(2) + ' < $' + CONFIG.PROFIT_KILLSWITCH);
+            }
         },
 
         _safetyBought: false,
@@ -824,6 +867,13 @@
             });
             marketRow.appendChild(earlyBtn);
             container.appendChild(marketRow);
+
+            // Cash balance row (line 3)
+            const cashRow = document.createElement('div');
+            cashRow.style.cssText = 'margin-bottom:6px; color:#aaa; font-size:11px;';
+            cashRow.textContent = 'Cash: --';
+            container.appendChild(cashRow);
+            this._elements.cash = cashRow;
 
             // Market resolve prediction
             const resolveRow = document.createElement('div');
@@ -1129,6 +1179,18 @@
             this._elements.resolve.textContent = 'Resolve: ' + result.winner + ' ' + diffStr + ' ($' + result.currentPrice.toFixed(2) + ')';
         },
 
+        updateCash(cashAmount) {
+            if (!this._elements.cash) return;
+            if (cashAmount === null) {
+                this._elements.cash.textContent = 'Cash: --';
+                this._elements.cash.style.color = '#aaa';
+                return;
+            }
+            const color = cashAmount < CONFIG.MIN_CASH_TO_TRADE ? '#ff4444' : '#00cc66';
+            this._elements.cash.textContent = 'Cash: $' + cashAmount.toFixed(2) + (cashAmount < CONFIG.MIN_CASH_TO_TRADE ? ' LOW!' : '');
+            this._elements.cash.style.color = color;
+        },
+
         updateProfit(total) {
             if (!this._elements.profit) return;
             const color = total >= 0 ? '#00cc66' : '#ff4444';
@@ -1142,6 +1204,21 @@
 
         getBuyMode() {
             return this._buyMode;
+        },
+
+        disableMainSwitch(reason) {
+            // Killswitch: turn OFF the main toggle
+            if (this._enabled) {
+                this._enabled = false;
+                GM_setValue('enabled', false);
+                // Update the toggle button visually
+                const toggleBtn = this._container ? this._container.querySelector('button') : null;
+                if (toggleBtn) {
+                    this._updateToggleBtn(toggleBtn);
+                }
+                App.stopMonitoring();
+                Logger.log('KILLSWITCH: main switch OFF - ' + reason);
+            }
         },
 
         destroy() {

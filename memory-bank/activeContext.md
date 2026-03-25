@@ -1,45 +1,64 @@
 # Active Context
 
-## Aktualni focus
+## Aktualni stav: v0.4.0
 
-v0.3.0 - 3-state buy mode (OFF/SIM/LIVE) s moznosti skutecneho obchodovani.
+Plne funkcni Tampermonkey userscript pro Polymarket BTC Up/Down 5min markety.
 
-## Co uz funguje (v0.2.2)
+## Features v0.4.0
 
-- Monitoring cen z DOM (100ms sampling)
-- Trend engine (10s rolling window, streak detection)
-- Signal generovani (>75c, <2:30 remaining, streak>=3)
-- Simulovany nakup s profit trackerem (persistent GM_setValue)
-- Winner detekce z BTC Price to beat vs Current price (cached)
-- Kliknuti +$1 na Polymarket UI pri sim buy
-- CLR button pro reset profitu
-- Overlay: 280px, 45vh log, timer, prices, trend, signal, sim trade, profit
+- 100ms DOM sampling cen z #outcome-buttons
+- 10s rolling window trend engine (streak detection)
+- Signal generator: 75-97c, <2:30 (nebo <3:30 s Early), streak>=3, 1x/market
+- 2 SIM/LIVE tlacitka (SIM priorita - blokuje LIVE)
+- LIVE mode: outcome click -> +$1 -> trade button (~100ms)
+- Safety net buy pri reverzu (1x, 75c+ pravidlo, profit accounting)
+- Fresh toggle - auto-navigate na live market (30s delay, okamzite pri zapnuti)
+- Early toggle - rozsiri trading window na 3:30 (210s)
+- CLR profit reset
+- Resolve display (parser pro Price to beat vs Current price, shadow DOM fallback)
+- Persistent profit tracker se safety net accounting (GM_setValue)
+- Cached BTC result pro resoluci
+- Deduplikovany signal logging
+- Overlay: 280px, rgb(58,58,58), 45vh log
 
-## Aktualni stav v0.3.3
+## UI Layout
 
-- 2 separatni SIM/LIVE tlacitka (SIM ma prioritu - blokuje LIVE)
-- Trading window: 150s (2:30) od konce marketu
-- Cenove okno: 75c < cena <= 97c
-- LIVE mode: klikne Buy tab + outcome + +$1 + Buy Up/Down za ~100ms
-- "Will resolve" row - realtime predikce z Price to beat vs Current price (shadow DOM parser)
-- Cached BTC result pro spravnou resoluci pri expiraci
-- CLR button pro reset profitu
-- Persistentni profit tracker (GM_setValue)
-- 100ms sampling, deduplikovany signal logging
+```
+PolyBMiCka v0.4.0               [ON]
+Status: MONITORING              [Fresh]
+Market: BTC 5min @ 13:30:00    [Early]
+Resolve: DOWN -122.60 ($71200.14)
+Time: 2:56 HOT  Rules: >75c, <2:30, $1
+UP: 6c  DOWN: 95c
+Trend: FLAT 0c in 8.4s (streak: 1)
+Signal: none
+[SIM: ON]        [LIVE: OFF]
+DOWN @ 77c $1
+pot. profit: +$0.30
+Profit from PolyBMiCka: $0.33  [CLR]
+Log: ...
+```
 
-## TODO pro dalsi session
+## DOM Selektory
 
-- Fix "Will resolve" parseru (shadow DOM `number-flow-react` nefunguje spolehlive)
-- Safety net buy pri reverzu (stejne pravidla: 75c+, 1x za market, opacna strana)
-- Export vysledku do JSON souboru (download)
-
-## Dulezite DOM selektory
-
-- Up button: `#outcome-buttons button.trading-button[value="0"]`
-- Down button: `#outcome-buttons button.trading-button[value="1"]`
+- Up: `#outcome-buttons button.trading-button[value="0"]`
+- Down: `#outcome-buttons button.trading-button[value="1"]`
 - Buy tab: `button[role="radio"][value="BUY"]`
 - Amount: `#market-order-amount-input`
 - +$1: button s textem "+$1"
-- Trade/Buy button: `button.trading-button[data-color="blue"]` (text "Buy Up" / "Buy Down")
-- Price to beat: span "Price to beat" -> parent -> span.text-heading-2xl
-- Current price: span "Current price" -> parent -> number-flow-react
+- Trade: `button.trading-button[data-color="blue"]`
+- Go to live: `button[aria-label="Go to live market"]` nebo button > p "Go to live market"
+- Price to beat: span "Price to beat" -> parent -> span $XX,XXX.XX
+- Current price: span "Current price" -> parent -> number-flow-react (shadow DOM)
+
+## Zname problemy
+
+- "Will resolve" parser nefunguje (shadow DOM number-flow-react - closed?)
+- Fresh auto-navigate: dispatchEvent MouseEvent misto .click() pro React SPA
+- Safety net profit: nyni spravne secita obe pozice
+
+## TODO dalsi session
+
+- Fix resolve parser (hook na fetch/WS?)
+- Export tradu do JSON
+- Overit LIVE buy sekvenci na skutecnem marketu
