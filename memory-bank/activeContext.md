@@ -15,12 +15,23 @@ v0.3.0 - 3-state buy mode (OFF/SIM/LIVE) s moznosti skutecneho obchodovani.
 - CLR button pro reset profitu
 - Overlay: 280px, 45vh log, timer, prices, trend, signal, sim trade, profit
 
-## Rozeslaný v0.3.0
+## Aktualni stav v0.3.3
 
-- 3-state buy tlacitko: OFF (sede) -> SIM (zlute) -> LIVE (cervene)
+- 2 separatni SIM/LIVE tlacitka (SIM ma prioritu - blokuje LIVE)
 - Trading window: 150s (2:30) od konce marketu
-- LIVE mode: skutecne klikne na Up/Down outcome button + +$1 + Buy Up/Down blue button
-- CONFIG.MAX_REMAINING_SECS misto MAX_REMAINING_MINS
+- Cenove okno: 75c < cena <= 97c
+- LIVE mode: klikne Buy tab + outcome + +$1 + Buy Up/Down za ~100ms
+- "Will resolve" row - realtime predikce z Price to beat vs Current price (shadow DOM parser)
+- Cached BTC result pro spravnou resoluci pri expiraci
+- CLR button pro reset profitu
+- Persistentni profit tracker (GM_setValue)
+- 100ms sampling, deduplikovany signal logging
+
+## TODO pro dalsi session
+
+- Fix "Will resolve" parseru (shadow DOM `number-flow-react` nefunguje spolehlive)
+- Safety net buy pri reverzu (stejne pravidla: 75c+, 1x za market, opacna strana)
+- Export vysledku do JSON souboru (download)
 
 ## Dulezite DOM selektory
 
