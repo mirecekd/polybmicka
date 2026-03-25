@@ -452,6 +452,10 @@
                         Logger.log('SAFETY NET: resolve flipped to ' + oppSide + '! Buying opposite @ ' + oppPrice + 'c');
                         ProfitTracker._safetyBought = true;
                         ProfitTracker._safetyBuy = { side: oppSide, price: oppPrice, amount: CONFIG.MAX_BUY_AMOUNT };
+                        // Update sim trade display with safety net info
+                        const mainBuy = ProfitTracker.getCurrentBuy();
+                        const mainPotProfit = ((100 / mainBuy.price) * mainBuy.amount) - mainBuy.amount;
+                        Overlay.updateSimTrade(mainBuy, mainPotProfit, ProfitTracker._safetyBuy);
                         ProfitTracker._clickOutcomeAndTrade(oppSide); // click outcome + trade (skip +$1, already set)
                     }
                 }
@@ -1046,6 +1050,7 @@
             profitRow.id = 'pbm-profit';
             profitRow.style.cssText = 'flex:1; padding:4px; background:#0a1a0e; border:1px solid #444; border-radius:4px; font-weight:bold; font-size:13px;';
             profitRow.textContent = 'Profit: $' + ProfitTracker.getProfit().toFixed(2);
+            profitRow.style.color = ProfitTracker.getProfit() >= 0 ? '#00cc66' : '#ff4444';
             profitWrapper.appendChild(profitRow);
             this._elements.profit = profitRow;
 
@@ -1196,14 +1201,19 @@
             }
         },
 
-        updateSimTrade(buy, potentialProfit) {
+        updateSimTrade(buy, potentialProfit, safetyBuy) {
             if (!this._elements.simTrade) return;
             if (!buy) {
                 this._elements.simTrade.textContent = 'Sim: no position';
                 this._elements.simTrade.style.color = '#aaa';
                 return;
             }
-            this._elements.simTrade.innerHTML = buy.side + ' @ ' + buy.price + 'c $' + buy.amount + '<br>pot. profit: +$' + potentialProfit.toFixed(2);
+            let html = buy.side + ' @ ' + buy.price + 'c $' + buy.amount;
+            html += '<br>pot. profit: +$' + potentialProfit.toFixed(2);
+            if (safetyBuy) {
+                html += '<br><span style="color:#ff8800;">SAFETY: ' + safetyBuy.side + ' @ ' + safetyBuy.price + 'c $' + safetyBuy.amount + '</span>';
+            }
+            this._elements.simTrade.innerHTML = html;
             this._elements.simTrade.style.color = '#ffcc00';
         },
 
@@ -1236,7 +1246,7 @@
         updateProfit(total) {
             if (!this._elements.profit) return;
             const color = total >= 0 ? '#00cc66' : '#ff4444';
-            this._elements.profit.textContent = 'Profit from PolyBMiCka: $' + total.toFixed(2);
+            this._elements.profit.textContent = 'Profit: $' + total.toFixed(2);
             this._elements.profit.style.color = color;
         },
 
