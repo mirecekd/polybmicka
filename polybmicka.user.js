@@ -1201,11 +1201,31 @@
             if (this._bodyElements) {
                 this._bodyElements.forEach(el => el.style.display = 'none');
             }
+            // Remove header bottom margin/border for compact strip
+            const header = this._container ? this._container.querySelector(':scope > div:first-child') : null;
+            if (header) {
+                header.style.marginBottom = '0';
+                header.style.borderBottom = 'none';
+                header.style.paddingBottom = '0';
+            }
+            if (this._container) {
+                this._container.style.padding = '6px 12px';
+            }
         },
 
         _expandBody() {
             if (this._bodyElements) {
                 this._bodyElements.forEach(el => el.style.display = '');
+            }
+            // Restore header styling
+            const header = this._container ? this._container.querySelector(':scope > div:first-child') : null;
+            if (header) {
+                header.style.marginBottom = '8px';
+                header.style.borderBottom = '1px solid #333';
+                header.style.paddingBottom = '6px';
+            }
+            if (this._container) {
+                this._container.style.padding = '12px';
             }
         },
 
