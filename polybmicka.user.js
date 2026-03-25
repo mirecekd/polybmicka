@@ -34,6 +34,7 @@
         MAX_REMAINING_SECS: 90,         // only buy if remaining time < 1:30 (90s)
         EARLY_SECS: 150,                // Early mode: < 2:30 (150s)
         EARLIER_SECS: 210,              // Earlier mode: < 3:30 (210s)
+        RACE_THRESHOLD: 100,            // Race mode: buy when BTC price jumps $100+ in one direction
 
         // Safety limits
         PROFIT_KILLSWITCH: -5,          // if profit drops below -$5, turn main switch OFF
@@ -438,8 +439,21 @@
             const trend = TrendEngine.calculate(this._samples);
             Overlay.updateTrend(trend);
 
-            // Buy logic: if mode is SIM or LIVE and signal fires
+            // Race mode: if BTC price diff >= $100, buy the winning side immediately
             const buyMode = Overlay.getBuyMode();
+            if (Overlay._raceEnabled && btcResult && buyMode !== 'OFF' && !ProfitTracker.getCurrentBuy()) {
+                const diff = Math.abs(btcResult.currentPrice - btcResult.priceToBeat);
+                if (diff >= CONFIG.RACE_THRESHOLD) {
+                    const side = btcResult.winner;
+                    const price = side === 'UP' ? upPrice : downPrice;
+                    if (price !== null && price > CONFIG.MIN_PRICE_TO_BUY && price <= CONFIG.MAX_PRICE_TO_BUY) {
+                        Logger.log('RACE! BTC diff $' + diff.toFixed(2) + ' >= $' + CONFIG.RACE_THRESHOLD + ' -> buying ' + side + ' @ ' + price + 'c');
+                        ProfitTracker.simulateBuy(side, price);
+                    }
+                }
+            }
+
+            // Buy logic: if mode is SIM or LIVE and signal fires
             if (trend.signal && buyMode !== 'OFF' && !ProfitTracker.getCurrentBuy()) {
                 // Cash safety: don't trade in LIVE mode if cash < MIN_CASH_TO_TRADE (SIM ignores cash)
                 if (buyMode === 'LIVE' && this._lastCash !== null && this._lastCash < CONFIG.MIN_CASH_TO_TRADE) {
@@ -942,12 +956,34 @@
             marketRow.appendChild(earlyBtn);
             container.appendChild(marketRow);
 
-            // Cash balance row (line 3)
-            const cashRow = document.createElement('div');
-            cashRow.style.cssText = 'margin-bottom:6px; color:#aaa; font-size:11px;';
-            cashRow.textContent = 'Cash: --';
-            container.appendChild(cashRow);
-            this._elements.cash = cashRow;
+            // Cash + Race row (line 3)
+            const cashRaceRow = document.createElement('div');
+            cashRaceRow.style.cssText = 'display:flex; gap:4px; align-items:center; margin-bottom:6px;';
+
+            const cashText = document.createElement('span');
+            cashText.style.cssText = 'color:#aaa; font-size:11px; flex:1;';
+            cashText.textContent = 'Cash: --';
+            cashRaceRow.appendChild(cashText);
+            this._elements.cash = cashText;
+
+            this._raceEnabled = GM_getValue('raceEnabled', false);
+            const raceBtn = document.createElement('button');
+            raceBtn.style.cssText = 'padding:1px 6px; border:1px solid #555; border-radius:3px; cursor:pointer; font-size:9px; font-family:monospace;';
+            const updateRace = () => {
+                raceBtn.textContent = 'Race';
+                raceBtn.style.background = this._raceEnabled ? '#1a1a5a' : '#333';
+                raceBtn.style.color = this._raceEnabled ? '#44aaff' : '#666';
+            };
+            updateRace();
+            raceBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this._raceEnabled = !this._raceEnabled;
+                GM_setValue('raceEnabled', this._raceEnabled);
+                updateRace();
+                Logger.log('Race: ' + (this._raceEnabled ? 'ON ($' + CONFIG.RACE_THRESHOLD + ' jump)' : 'OFF'));
+            });
+            cashRaceRow.appendChild(raceBtn);
+            container.appendChild(cashRaceRow);
 
             // Market resolve prediction
             const resolveRow = document.createElement('div');
