@@ -99,16 +99,23 @@
         },
 
         findGoToLiveMarketButton() {
-            // Only match actual buttons with aria-label="Go to live market"
+            // Match button with aria-label or containing <p>Go to live market</p>
             const btn = document.querySelector('button[aria-label="Go to live market"]');
             if (btn) return btn;
-            // Fallback: button containing the exact text
             const allBtns = document.querySelectorAll('button');
             for (const b of allBtns) {
                 const p = b.querySelector('p');
                 if (p && p.textContent.trim() === 'Go to live market') return b;
             }
             return null;
+        },
+
+        clickGoToLiveMarket() {
+            const btn = this.findGoToLiveMarketButton();
+            if (!btn) return false;
+            // Use proper mouse event dispatch for React SPA compatibility
+            btn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+            return true;
         },
 
         findTradingPanel() {
@@ -406,12 +413,9 @@
                 const goBtn = PageAdapter.findGoToLiveMarketButton();
                 if (goBtn && !this._freshClicked) {
                     this._freshClicked = true;
-                    // Wait 30s after expiry before clicking
                     setTimeout(() => {
-                        const goBtnNow = PageAdapter.findGoToLiveMarketButton();
-                        if (goBtnNow) {
-                            Logger.log('Fresh: auto-navigating to live market');
-                            goBtnNow.click();
+                        if (PageAdapter.clickGoToLiveMarket()) {
+                            Logger.log('Fresh: auto-navigated to live market');
                         }
                         this._freshClicked = false;
                     }, 30000);
