@@ -1322,7 +1322,8 @@
             if (!PageAdapter.isBtc5minMarket()) {
                 Overlay.updateStatus('Not a BTC 5min market');
                 Overlay.updateMarket(window.location.pathname);
-                this.stopMonitoring();
+                // Turn off main switch when leaving BTC 5min market
+                Overlay.disableMainSwitch('left BTC 5min market');
                 return;
             }
 
