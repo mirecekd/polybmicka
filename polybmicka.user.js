@@ -393,7 +393,7 @@
                     if (oppPrice !== null && oppPrice > CONFIG.MIN_PRICE_TO_BUY && oppPrice <= CONFIG.MAX_PRICE_TO_BUY) {
                         Logger.log('SAFETY NET: resolve flipped to ' + oppSide + '! Buying opposite @ ' + oppPrice + 'c');
                         ProfitTracker._safetyBought = true;
-                        ProfitTracker._simulateClickAmount(); // click +$1 on PM UI
+                        ProfitTracker._simulateClickAmount(oppSide); // click outcome + +$1 on PM UI
                     }
                 }
             }
@@ -559,15 +559,26 @@
             this._simulateClickAmount();
         },
 
-        _simulateClickAmount() {
-            // First ensure Buy tab is active
+        _simulateClickAmount(side) {
+            // Step 1: ensure Buy tab is active
             const { buyTab } = PageAdapter.findBuySellTabs();
             if (buyTab && buyTab.getAttribute('data-state') !== 'checked') {
                 buyTab.click();
                 Logger.log('Clicked Buy tab');
             }
 
-            // Then click +$1 button (fast sequence for LIVE mode)
+            // Step 2: click correct outcome button (Up=value="0", Down=value="1")
+            const buySide = side || (this._currentMarketBuy ? this._currentMarketBuy.side : null);
+            if (buySide) {
+                const { upBtn, downBtn } = PageAdapter.findUpDownButtons();
+                const targetBtn = buySide === 'UP' ? upBtn : downBtn;
+                if (targetBtn) {
+                    targetBtn.click();
+                    Logger.log('Clicked ' + buySide + ' outcome button');
+                }
+            }
+
+            // Step 3: click +$1 button (fast sequence for LIVE mode)
             setTimeout(() => {
                 const quickBtns = PageAdapter.findQuickAmountButtons();
                 const oneBtn = quickBtns.find(b => b.label === '+$1');
