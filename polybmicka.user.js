@@ -774,8 +774,12 @@
                 }
             });
             statusRow.appendChild(freshBtn);
+            container.appendChild(statusRow);
 
-            // Early button - extends trading window from 2:30 to 3:30
+            // Early button - separate row
+            const earlyRow = document.createElement('div');
+            earlyRow.style.cssText = 'display:flex; gap:4px; align-items:center; margin-bottom:6px;';
+
             this._earlyEnabled = GM_getValue('earlyEnabled', false);
             const earlyBtn = document.createElement('button');
             earlyBtn.style.cssText = 'padding:1px 6px; border:1px solid #555; border-radius:3px; cursor:pointer; font-size:9px; font-family:monospace;';
@@ -792,11 +796,8 @@
                 updateEarly();
                 Logger.log('Early: ' + (this._earlyEnabled ? 'ON (3:30)' : 'OFF (2:30)'));
             });
-            statusRow.appendChild(earlyBtn);
-
-            container.appendChild(statusRow);
-
-            // Market info
+            earlyRow.appendChild(earlyBtn);
+            container.appendChild(earlyRow);
             const marketInfo = document.createElement('div');
             marketInfo.id = 'pbm-market';
             marketInfo.style.cssText = 'margin-bottom:6px; color:#aaa;';
