@@ -25,7 +25,7 @@
         URL_CHECK_INTERVAL_MS: 1000,
         DOM_RETRY_INTERVAL_MS: 500,
         DOM_RETRY_MAX: 60,
-        VERSION: '0.3.1',
+        VERSION: '0.3.2',
 
         // Trading rules
         MAX_BUY_AMOUNT: 1,              // max $1 per market
@@ -319,6 +319,7 @@
             const btcResult = PageAdapter.getMarketResult();
             if (btcResult) {
                 this._lastBtcResult = btcResult;
+                Overlay.updateResolve(btcResult);
             }
 
             const sample = {
@@ -679,6 +680,14 @@
             container.appendChild(marketInfo);
             this._elements.market = marketInfo;
 
+            // Market resolve prediction
+            const resolveRow = document.createElement('div');
+            resolveRow.id = 'pbm-resolve';
+            resolveRow.style.cssText = 'margin-bottom:6px; padding:4px; background:#111; border-radius:4px; font-weight:bold; font-size:13px; text-align:center;';
+            resolveRow.textContent = 'Will resolve: --';
+            container.appendChild(resolveRow);
+            this._elements.resolve = resolveRow;
+
             // Timer + Rules row
             const timerRow = document.createElement('div');
             timerRow.id = 'pbm-timer';
@@ -918,6 +927,18 @@
             }
             this._elements.simTrade.textContent = 'Sim: ' + buy.side + ' @ ' + buy.price + 'c $' + buy.amount + ' -> pot. +$' + potentialProfit.toFixed(2);
             this._elements.simTrade.style.color = '#ffcc00';
+        },
+
+        updateResolve(result) {
+            if (!this._elements.resolve) return;
+            if (!result) {
+                this._elements.resolve.textContent = 'Will resolve: --';
+                this._elements.resolve.style.color = '#888';
+                return;
+            }
+            const color = result.winner === 'UP' ? '#00cc66' : '#ff4444';
+            this._elements.resolve.style.color = color;
+            this._elements.resolve.textContent = 'Will resolve: ' + result.winner + ' ($' + result.currentPrice.toFixed(2) + ' vs $' + result.priceToBeat.toFixed(2) + ')';
         },
 
         updateProfit(total) {
