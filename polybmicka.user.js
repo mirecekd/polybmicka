@@ -961,7 +961,7 @@
             const trend = document.createElement('div');
             trend.id = 'pbm-trend';
             trend.style.cssText = 'margin-bottom:6px; padding:4px; background:#111; border-radius:4px;';
-            trend.textContent = 'Trend: --';
+            trend.textContent = 'T: --';
             container.appendChild(trend);
             this._elements.trend = trend;
 
@@ -1164,7 +1164,7 @@
                 if (trend.direction === 'DOWN') color = '#ff4444';
                 if (trend.direction === 'FLAT') color = '#888';
                 this._elements.trend.style.color = color;
-                this._elements.trend.textContent = 'Trend: ' + trend.message;
+                this._elements.trend.textContent = 'T: ' + trend.message;
             }
             if (this._elements.signal) {
                 if (trend.signal) {
