@@ -2,38 +2,33 @@
 
 ## Aktualni focus
 
-Faze 1 - vytvoreni zakladniho monitorovaciho Tampermonkey skriptu.
+v0.3.0 - 3-state buy mode (OFF/SIM/LIVE) s moznosti skutecneho obchodovani.
 
-## Co delame ted
+## Co uz funguje (v0.2.2)
 
-- Tvorime skeleton userscriptu s:
-  - Tampermonkey hlavickou
-  - URL detekcí (live vs historical)
-  - DOM observerem pro trading panel
-  - Zakladnim UI overlay panelem (toggle, status, ceny)
-  - Price sampling z Up/Down buttonu
-  - Jednoduchym trend pocitanim
-  - Console loggingem
+- Monitoring cen z DOM (100ms sampling)
+- Trend engine (10s rolling window, streak detection)
+- Signal generovani (>75c, <2:30 remaining, streak>=3)
+- Simulovany nakup s profit trackerem (persistent GM_setValue)
+- Winner detekce z BTC Price to beat vs Current price (cached)
+- Kliknuti +$1 na Polymarket UI pri sim buy
+- CLR button pro reset profitu
+- Overlay: 280px, 45vh log, timer, prices, trend, signal, sim trade, profit
 
-## Rozhodnuti
+## Rozeslaný v0.3.0
 
-- Zacneme cistym vanilla JS bez bundleru
-- Jeden soubor `.user.js`
-- DOM-only pristup (cteme ceny primo z buttonu)
-- Zadne skutecne obchody v Fazi 1
-- Sampling interval: 500ms
+- 3-state buy tlacitko: OFF (sede) -> SIM (zlute) -> LIVE (cervene)
+- Trading window: 150s (2:30) od konce marketu
+- LIVE mode: skutecne klikne na Up/Down outcome button + +$1 + Buy Up/Down blue button
+- CONFIG.MAX_REMAINING_SECS misto MAX_REMAINING_MINS
 
-## Dalsi kroky
+## Dulezite DOM selektory
 
-1. Vytvorit skeleton userscriptu
-2. Otestovat na Polymarket - overit selektory
-3. Doladit selektory podle skutecneho DOMu
-4. Pridat trend engine
-5. Pridat signal generator (simulated)
-
-## Dulezite poznatky
-
-- URL live marketu: `polymarket.com/event/btc-updown-5m-{timestamp}`
-- Timestamp v URL je unix timestamp (napr. 1774429200 = 25.3.2026 10:00 CET)
-- Ceny na buttonech jsou ve formatu "Up Xc" nebo "Down Xc" (centy)
-- Polymarket je React SPA - DOM se meni dynamicky
+- Up button: `#outcome-buttons button.trading-button[value="0"]`
+- Down button: `#outcome-buttons button.trading-button[value="1"]`
+- Buy tab: `button[role="radio"][value="BUY"]`
+- Amount: `#market-order-amount-input`
+- +$1: button s textem "+$1"
+- Trade/Buy button: `button.trading-button[data-color="blue"]` (text "Buy Up" / "Buy Down")
+- Price to beat: span "Price to beat" -> parent -> span.text-heading-2xl
+- Current price: span "Current price" -> parent -> number-flow-react

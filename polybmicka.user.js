@@ -25,12 +25,15 @@
         URL_CHECK_INTERVAL_MS: 1000,
         DOM_RETRY_INTERVAL_MS: 500,
         DOM_RETRY_MAX: 60,
-        VERSION: '0.2.2',
+        VERSION: '0.3.0',
 
         // Trading rules
         MAX_BUY_AMOUNT: 1,              // max $1 per market
         MIN_PRICE_TO_BUY: 75,           // only buy if price > 75c
-        MAX_REMAINING_MINS: 2,          // only buy if remaining time < 2 minutes
+        MAX_REMAINING_SECS: 150,        // only buy if remaining time < 2:30 (150s)
+
+        // Buy modes: 'OFF' | 'SIM' | 'LIVE'
+        BUY_MODES: ['OFF', 'SIM', 'LIVE'],
     };
 
     // =========================================================================
@@ -456,8 +459,9 @@
             const remainingMins = PageAdapter.getRemainingMinutes();
             const latest = MarketReader.getLatest();
 
-            // Rule: only trade when < 2 minutes remaining
-            if (remainingMins === null || remainingMins >= CONFIG.MAX_REMAINING_MINS) {
+            // Rule: only trade when < 2:30 remaining
+            const remainingSecs = PageAdapter.getRemainingSeconds();
+            if (remainingSecs === null || remainingSecs >= CONFIG.MAX_REMAINING_SECS) {
                 return null; // too early, wait
             }
 
