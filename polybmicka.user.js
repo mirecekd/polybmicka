@@ -1016,10 +1016,11 @@
             const secs = remainingSecs % 60;
             const timeStr = mins + ':' + String(secs).padStart(2, '0');
 
+            const hotThreshold = this._earlyEnabled ? 210 : CONFIG.MAX_REMAINING_SECS;
             if (remainingSecs <= 0) {
                 timerSpan.textContent = 'EXPIRED';
                 timerSpan.style.color = '#ff4444';
-            } else if (remainingSecs <= CONFIG.MAX_REMAINING_SECS) {
+            } else if (remainingSecs <= hotThreshold) {
                 timerSpan.textContent = 'Time: ' + timeStr + ' HOT';
                 timerSpan.style.color = '#ff8800';
             } else {
