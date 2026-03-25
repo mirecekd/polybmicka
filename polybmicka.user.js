@@ -1038,7 +1038,7 @@
             const simTrade = document.createElement('div');
             simTrade.id = 'pbm-simtrade';
             simTrade.style.cssText = 'margin-bottom:6px; padding:4px; background:#1a0a2e; border:1px solid #444; border-radius:4px; color:#aaa; font-size:11px;';
-            simTrade.textContent = 'Sim: no position';
+            simTrade.textContent = 'no position';
             container.appendChild(simTrade);
             this._elements.simTrade = simTrade;
 
@@ -1204,8 +1204,8 @@
         updateSimTrade(buy, potentialProfit, safetyBuy) {
             if (!this._elements.simTrade) return;
             if (!buy) {
-                this._elements.simTrade.textContent = 'Sim: no position';
-                this._elements.simTrade.style.color = '#aaa';
+                this._elements.simTrade.textContent = 'no position';
+                this._elements.simTrade.style.color = '#555';
                 return;
             }
 
