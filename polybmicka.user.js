@@ -199,6 +199,22 @@
             return document.querySelector('button.trading-button[data-color="blue"]');
         },
 
+        clickTradeButton() {
+            // The trade button uses data-three-dee with data-tapstate
+            // Needs full mouse event sequence to trigger React handlers
+            const btn = this.findTradeButton();
+            if (!btn) return false;
+            const opts = { bubbles: true, cancelable: true, view: window };
+            btn.dispatchEvent(new MouseEvent('pointerdown', opts));
+            btn.dispatchEvent(new MouseEvent('mousedown', opts));
+            setTimeout(() => {
+                btn.dispatchEvent(new MouseEvent('pointerup', opts));
+                btn.dispatchEvent(new MouseEvent('mouseup', opts));
+                btn.dispatchEvent(new MouseEvent('click', opts));
+            }, 50);
+            return true;
+        },
+
         findAmountInput() {
             return document.getElementById('market-order-amount-input');
         },
@@ -672,14 +688,13 @@
                         setTimeout(() => {
                             const tradeBtn = PageAdapter.findTradeButton();
                             if (tradeBtn) {
-                                const tradeBtnText = tradeBtn.textContent.trim();
-                                Logger.log('LIVE BUY: clicking "' + tradeBtnText + '"');
-                                tradeBtn.click();
+                                Logger.log('LIVE BUY: clicking "' + tradeBtn.textContent.trim() + '"');
+                                PageAdapter.clickTradeButton();
                                 Logger.log('LIVE BUY: executed!');
                             } else {
                                 Logger.log('LIVE BUY ERROR: trade button not found!');
                             }
-                        }, 50);
+                        }, 100);
                     }
                 } else {
                     Logger.log('WARNING: +$1 button not found on page');
@@ -708,14 +723,13 @@
                 setTimeout(() => {
                     const tradeBtn = PageAdapter.findTradeButton();
                     if (tradeBtn) {
-                        const tradeBtnText = tradeBtn.textContent.trim();
-                        Logger.log('SAFETY LIVE BUY: clicking "' + tradeBtnText + '"');
-                        tradeBtn.click();
+                        Logger.log('SAFETY LIVE BUY: clicking "' + tradeBtn.textContent.trim() + '"');
+                        PageAdapter.clickTradeButton();
                         Logger.log('SAFETY LIVE BUY: executed!');
                     } else {
                         Logger.log('SAFETY LIVE BUY ERROR: trade button not found!');
                     }
-                }, 50);
+                }, 100);
             }
         },
 
