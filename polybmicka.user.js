@@ -385,11 +385,16 @@
         _evaluateSignal(direction, strength, consecutive) {
             // Phase 1: just show what we WOULD do, never act
 
+            // Rule: only 1 buy per market - if we already have a position, no more signals
+            if (ProfitTracker.getCurrentBuy()) {
+                return null;
+            }
+
             // Check trading rules
             const remainingMins = PageAdapter.getRemainingMinutes();
             const latest = MarketReader.getLatest();
 
-            // Rule: only trade when < 2 minutes remaining
+            // Rule: only trade when < 3 minutes remaining
             if (remainingMins === null || remainingMins >= CONFIG.MAX_REMAINING_MINS) {
                 return null; // too early, wait
             }
