@@ -238,6 +238,21 @@
             return true;
         },
 
+        clickTradeButtonWithRetry(attempt) {
+            attempt = attempt || 1;
+            const btn = this.findTradeButton();
+            if (!btn) {
+                Logger.log('LIVE BUY: trade button not found (attempt ' + attempt + ')');
+                if (attempt < 3) {
+                    setTimeout(() => this.clickTradeButtonWithRetry(attempt + 1), 300);
+                }
+                return;
+            }
+            Logger.log('LIVE BUY attempt ' + attempt + ': "' + btn.textContent.trim() + '"');
+            this.clickTradeButton();
+            Logger.log('LIVE BUY: executed (attempt ' + attempt + ')');
+        },
+
         findAmountInput() {
             return document.getElementById('market-order-amount-input');
         },
@@ -719,18 +734,11 @@
                     oneBtn.el.click();
                     Logger.log('Clicked +$1 on Polymarket UI');
 
-                    // LIVE MODE: immediately click the blue trade button
+                    // LIVE MODE: click the blue trade button after delay for recalculation
                     if (Overlay.getBuyMode() === 'LIVE') {
                         setTimeout(() => {
-                            const tradeBtn = PageAdapter.findTradeButton();
-                            if (tradeBtn) {
-                                Logger.log('LIVE BUY: clicking "' + tradeBtn.textContent.trim() + '"');
-                                PageAdapter.clickTradeButton();
-                                Logger.log('LIVE BUY: executed!');
-                            } else {
-                                Logger.log('LIVE BUY ERROR: trade button not found!');
-                            }
-                        }, 100);
+                            PageAdapter.clickTradeButtonWithRetry();
+                        }, 500);
                     }
                 } else {
                     Logger.log('WARNING: +$1 button not found on page');
