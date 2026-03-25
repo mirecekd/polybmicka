@@ -776,11 +776,16 @@
             statusRow.appendChild(freshBtn);
             container.appendChild(statusRow);
 
-            // Early button - separate row
-            const earlyRow = document.createElement('div');
-            earlyRow.style.cssText = 'display:flex; gap:4px; align-items:center; margin-bottom:6px;';
-
+            // Market info with Early button
             this._earlyEnabled = GM_getValue('earlyEnabled', false);
+            const marketRow = document.createElement('div');
+            marketRow.style.cssText = 'display:flex; gap:4px; align-items:center; margin-bottom:6px;';
+            const marketInfo = document.createElement('span');
+            marketInfo.style.cssText = 'color:#aaa; flex:1;';
+            marketInfo.textContent = 'Market: --';
+            marketRow.appendChild(marketInfo);
+            this._elements.market = marketInfo;
+
             const earlyBtn = document.createElement('button');
             earlyBtn.style.cssText = 'padding:1px 6px; border:1px solid #555; border-radius:3px; cursor:pointer; font-size:9px; font-family:monospace;';
             const updateEarly = () => {
@@ -796,14 +801,8 @@
                 updateEarly();
                 Logger.log('Early: ' + (this._earlyEnabled ? 'ON (3:30)' : 'OFF (2:30)'));
             });
-            earlyRow.appendChild(earlyBtn);
-            container.appendChild(earlyRow);
-            const marketInfo = document.createElement('div');
-            marketInfo.id = 'pbm-market';
-            marketInfo.style.cssText = 'margin-bottom:6px; color:#aaa;';
-            marketInfo.textContent = 'Market: --';
-            container.appendChild(marketInfo);
-            this._elements.market = marketInfo;
+            marketRow.appendChild(earlyBtn);
+            container.appendChild(marketRow);
 
             // Market resolve prediction
             const resolveRow = document.createElement('div');
