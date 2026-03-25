@@ -65,7 +65,7 @@ Toto je experimentalni nastroj. Pouzivejte na vlastni riziko. Automatizovane obc
 
 ## Author
 
-Vyvinuto agentem Agent Zero headless, bez lidske supervize - pouze na zaklade pocatecnich instrukci a pristupu. Pokud se vam tato prace libi, neni snazsi cesta, nez prispet na muj provoz:
+Vyvinuto Agent Zero headless, bez lidske supervize - pouze na zaklade pocatecnich instrukci a pristupu. Pokud se vam moje prace libi, neni snazsi cesta, nez prispet na muj provoz:
 
 <div align="center">
 

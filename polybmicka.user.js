@@ -526,9 +526,10 @@
             const remainingMins = PageAdapter.getRemainingMinutes();
             const latest = MarketReader.getLatest();
 
-            // Rule: only trade when < 2:30 remaining
+            // Rule: only trade when < 2:30 (or 3:30 if Early) remaining
             const remainingSecs = PageAdapter.getRemainingSeconds();
-            if (remainingSecs === null || remainingSecs >= CONFIG.MAX_REMAINING_SECS) {
+            const maxSecs = Overlay._earlyEnabled ? 210 : CONFIG.MAX_REMAINING_SECS;
+            if (remainingSecs === null || remainingSecs >= maxSecs) {
                 return null; // too early, wait
             }
 
@@ -757,15 +758,9 @@
             const freshBtn = document.createElement('button');
             freshBtn.style.cssText = 'padding:1px 6px; border:1px solid #555; border-radius:3px; cursor:pointer; font-size:9px; font-family:monospace;';
             const updateFresh = () => {
-                if (this._freshEnabled) {
-                    freshBtn.textContent = 'Fresh ON';
-                    freshBtn.style.background = '#1a5a1a';
-                    freshBtn.style.color = '#4aff4a';
-                } else {
-                    freshBtn.textContent = 'Fresh OFF';
-                    freshBtn.style.background = '#333';
-                    freshBtn.style.color = '#666';
-                }
+                freshBtn.textContent = 'Fresh';
+                freshBtn.style.background = this._freshEnabled ? '#1a5a1a' : '#333';
+                freshBtn.style.color = this._freshEnabled ? '#4aff4a' : '#666';
             };
             updateFresh();
             freshBtn.addEventListener('click', (e) => {
@@ -773,14 +768,31 @@
                 this._freshEnabled = !this._freshEnabled;
                 GM_setValue('freshEnabled', this._freshEnabled);
                 updateFresh();
-                Logger.log('Fresh auto-navigate: ' + (this._freshEnabled ? 'ON' : 'OFF'));
-                // If just enabled and on expired market, navigate immediately
+                Logger.log('Fresh: ' + (this._freshEnabled ? 'ON' : 'OFF'));
                 if (this._freshEnabled && PageAdapter.clickGoToLiveMarket()) {
                     Logger.log('Fresh: navigating now!');
                 }
             });
             statusRow.appendChild(freshBtn);
-            this._elements.freshBtn = freshBtn;
+
+            // Early button - extends trading window from 2:30 to 3:30
+            this._earlyEnabled = GM_getValue('earlyEnabled', false);
+            const earlyBtn = document.createElement('button');
+            earlyBtn.style.cssText = 'padding:1px 6px; border:1px solid #555; border-radius:3px; cursor:pointer; font-size:9px; font-family:monospace;';
+            const updateEarly = () => {
+                earlyBtn.textContent = 'Early';
+                earlyBtn.style.background = this._earlyEnabled ? '#5a3a1a' : '#333';
+                earlyBtn.style.color = this._earlyEnabled ? '#ffaa44' : '#666';
+            };
+            updateEarly();
+            earlyBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this._earlyEnabled = !this._earlyEnabled;
+                GM_setValue('earlyEnabled', this._earlyEnabled);
+                updateEarly();
+                Logger.log('Early: ' + (this._earlyEnabled ? 'ON (3:30)' : 'OFF (2:30)'));
+            });
+            statusRow.appendChild(earlyBtn);
 
             container.appendChild(statusRow);
 
