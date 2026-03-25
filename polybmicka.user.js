@@ -718,15 +718,18 @@
             header.appendChild(toggleBtn);
             container.appendChild(header);
 
-            // Status line
-            const status = document.createElement('div');
-            status.id = 'pbm-status';
-            status.style.cssText = 'margin-bottom:6px; color:#888;';
-            status.textContent = 'Status: initializing...';
+            // Status line with Fresh button
+            const statusRow = document.createElement('div');
+            statusRow.style.cssText = 'display:flex; gap:4px; align-items:center; margin-bottom:6px;';
 
-            // Fresh button - clicks "Go to live market" on PM page
+            const statusText = document.createElement('span');
+            statusText.style.cssText = 'color:#888; flex:1;';
+            statusText.textContent = 'Status: initializing...';
+            statusRow.appendChild(statusText);
+            this._elements.status = statusText;
+
             const freshBtn = document.createElement('button');
-            freshBtn.style.cssText = 'padding:1px 6px; border:1px solid #2a5a2a; border-radius:3px; cursor:pointer; font-size:9px; font-family:monospace; background:#1a3a1a; color:#4a8a4a; margin-left:6px;';
+            freshBtn.style.cssText = 'padding:1px 6px; border:1px solid #2a5a2a; border-radius:3px; cursor:pointer; font-size:9px; font-family:monospace; background:#1a3a1a; color:#4a8a4a;';
             freshBtn.textContent = 'Fresh';
             freshBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -738,10 +741,9 @@
                     Logger.log('No "Go to live market" button found');
                 }
             });
-            status.appendChild(freshBtn);
+            statusRow.appendChild(freshBtn);
 
-            container.appendChild(status);
-            this._elements.status = status;
+            container.appendChild(statusRow);
 
             // Market info
             const marketInfo = document.createElement('div');
