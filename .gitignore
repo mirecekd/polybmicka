@@ -1,2 +1,5 @@
 # Memory bank - local only
 memory-bank/
+
+# Test scripts - local only
+test-click.user.js

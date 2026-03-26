@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PolyBMiCka - Polymarket Bitcoin Micro Cycle Monitor
 // @namespace    https://github.com/mirdvorak/polybmicka
-// @version      0.5.2
+// @version      0.6.0
 // @description  Monitors Bitcoin Up/Down 5-minute markets on Polymarket - Phase 1: observation only
 // @author       Miroslav Dvorak
 // @match        https://polymarket.com/*
@@ -25,11 +25,11 @@
         URL_CHECK_INTERVAL_MS: 1000,
         DOM_RETRY_INTERVAL_MS: 500,
         DOM_RETRY_MAX: 60,
-        VERSION: '0.5.2',
+        VERSION: '0.6.0',
 
         // Trading rules
         MAX_BUY_AMOUNT: 1,              // max $1 per market
-        MIN_PRICE_TO_BUY: 75,           // only buy if price > 75c
+        MIN_PRICE_TO_BUY: 77,           // only buy if price > 75c
         MAX_PRICE_TO_BUY: 97,           // safety: don't buy above 97c (too expensive, no profit)
         MAX_REMAINING_SECS: 90,         // only buy if remaining time < 1:30 (90s)
         EARLY_SECS: 150,                // Early mode: < 2:30 (150s)
@@ -38,7 +38,7 @@
 
         // Safety limits
         PROFIT_KILLSWITCH: -5,          // if profit drops below -$5, turn main switch OFF
-        MIN_CASH_TO_TRADE: 12,          // don't trade if cash balance < $12
+        MIN_CASH_TO_TRADE: 10,          // don't trade if cash balance < $12
 
         // Buy modes: 'OFF' | 'SIM' | 'LIVE'
         BUY_MODES: ['OFF', 'SIM', 'LIVE'],
@@ -201,39 +201,38 @@
         },
 
         clickTradeButton() {
-            // The trade button uses data-three-dee with data-tapstate
+            // Timed pointer sequence: pointerdown+mousedown, then 50ms delay,
+            // then pointerup+mouseup+click. This is the only strategy that works
+            // with Polymarket's data-three-dee button component.
             const btn = this.findTradeButton();
             if (!btn) return false;
 
-            // Debug: log button state
-            Logger.log('TRADE BTN: text="' + btn.textContent.trim() + '" visible=' + (btn.offsetParent !== null) + ' disabled=' + btn.disabled);
+            Logger.log('TRADE BTN: text="' + btn.textContent.trim() + '" disabled=' + btn.disabled);
 
-            // Get the innermost text span to click on (bypass 3D button wrapper)
-            const textSpan = btn.querySelector('span.trading-button-text') || btn.querySelector('span');
-            const target = textSpan || btn;
-
-            // Click on the inner text element with centered coordinates
-            const rect = target.getBoundingClientRect();
+            const rect = btn.getBoundingClientRect();
             const cx = rect.left + rect.width / 2;
             const cy = rect.top + rect.height / 2;
-            Logger.log('TRADE BTN: clicking at (' + Math.round(cx) + ',' + Math.round(cy) + ') on ' + target.tagName + '.' + (target.className || '').split(' ')[0]);
+            Logger.log('TRADE BTN: S2 timed pointer at (' + Math.round(cx) + ',' + Math.round(cy) + ') size=' + Math.round(rect.width) + 'x' + Math.round(rect.height));
+            const evtBase = { bubbles: true, cancelable: true, view: unsafeWindow || window, clientX: cx, clientY: cy, button: 0 };
 
-            const clickOpts = { bubbles: true, cancelable: true, view: window, clientX: cx, clientY: cy, button: 0 };
-
-            // Full pointer + mouse sequence on the inner element
-            target.dispatchEvent(new PointerEvent('pointerdown', clickOpts));
-            target.dispatchEvent(new MouseEvent('mousedown', clickOpts));
-            target.dispatchEvent(new PointerEvent('pointerup', clickOpts));
-            target.dispatchEvent(new MouseEvent('mouseup', clickOpts));
-            target.dispatchEvent(new MouseEvent('click', clickOpts));
-
-            // Also try btn.click() and React props as fallbacks
-            btn.click();
-            const reactPropsKey = Object.keys(btn).find(k => k.startsWith('__reactProps$'));
-            if (reactPropsKey && btn[reactPropsKey] && btn[reactPropsKey].onClick) {
-                Logger.log('TRADE BTN: found React onClick, calling directly');
-                btn[reactPropsKey].onClick({ preventDefault: () => {}, stopPropagation: () => {}, nativeEvent: new MouseEvent('click', clickOpts) });
+            try {
+                btn.dispatchEvent(new PointerEvent('pointerdown', { ...evtBase, pointerId: 1, pointerType: 'mouse' }));
+                btn.dispatchEvent(new MouseEvent('mousedown', evtBase));
+                Logger.log('TRADE BTN: pointerdown+mousedown dispatched OK');
+            } catch (e) {
+                Logger.log('TRADE BTN: pointerdown ERROR: ' + e.message);
             }
+
+            setTimeout(() => {
+                try {
+                    btn.dispatchEvent(new PointerEvent('pointerup', { ...evtBase, pointerId: 1, pointerType: 'mouse' }));
+                    btn.dispatchEvent(new MouseEvent('mouseup', evtBase));
+                    btn.dispatchEvent(new MouseEvent('click', evtBase));
+                    Logger.log('TRADE BTN: pointerup+click dispatched OK (50ms delay)');
+                } catch (e) {
+                    Logger.log('TRADE BTN: pointerup ERROR: ' + e.message);
+                }
+            }, 50);
 
             return true;
         },
@@ -470,6 +469,25 @@
                 const cash = PageAdapter.getCashBalance();
                 Overlay.updateCash(cash);
                 this._lastCash = cash;
+            }
+
+            // LIVE mode: pre-set +$1 amount when entering HOT zone (before signal fires)
+            // This eliminates the 1.5s delay when the signal actually triggers
+            if (Overlay.getBuyMode() === 'LIVE' && !this._amountPreset && !ProfitTracker.getCurrentBuy()) {
+                const hotThreshold = Overlay._getMaxSecs();
+                if (remainingSecs !== null && remainingSecs <= hotThreshold && remainingSecs > 0) {
+                    const quickBtns = PageAdapter.findQuickAmountButtons();
+                    const oneBtn = quickBtns.find(b => b.label === '+$1');
+                    if (oneBtn) {
+                        oneBtn.el.click();
+                        this._amountPreset = true;
+                        Logger.log('LIVE PRE-SET: clicked +$1 (HOT zone entered)');
+                    }
+                }
+            }
+            // Reset pre-set flag on new market
+            if (remainingSecs !== null && remainingSecs > Overlay._getMaxSecs()) {
+                this._amountPreset = false;
             }
 
             // Calculate trend
@@ -726,20 +744,29 @@
                 }
             }
 
-            // Step 3: click +$1 button (fast sequence for LIVE mode)
+            // LIVE MODE: +$1 was already pre-set at HOT zone entry
+            // Pause sampling to prevent interference with S2 pointer sequence
+            if (Overlay.getBuyMode() === 'LIVE') {
+                Logger.log('LIVE FAST: outcome set, pausing sampling, clicking trade in 300ms');
+                MarketReader.stop();
+                setTimeout(() => {
+                    PageAdapter.clickTradeButton();
+                    // Resume sampling after S2 completes (50ms pointer + 100ms buffer)
+                    setTimeout(() => {
+                        MarketReader.start();
+                        Logger.log('LIVE FAST: sampling resumed');
+                    }, 200);
+                }, 300);
+                return;
+            }
+
+            // SIM mode: click +$1 for visual display only (no trade)
             setTimeout(() => {
                 const quickBtns = PageAdapter.findQuickAmountButtons();
                 const oneBtn = quickBtns.find(b => b.label === '+$1');
                 if (oneBtn) {
                     oneBtn.el.click();
                     Logger.log('Clicked +$1 on Polymarket UI');
-
-                    // LIVE MODE: click the blue trade button after delay for recalculation
-                    if (Overlay.getBuyMode() === 'LIVE') {
-                        setTimeout(() => {
-                            PageAdapter.clickTradeButtonWithRetry();
-                        }, 500);
-                    }
                 } else {
                     Logger.log('WARNING: +$1 button not found on page');
                 }
@@ -747,8 +774,8 @@
         },
 
         _clickOutcomeAndTrade(side) {
-            // Safety net version: only click outcome + trade button
-            // Skip +$1 because the amount is already set from the original buy
+            // Safety net version: click opposite outcome + $1 + trade button
+            // Must click +$1 to ensure amount is set for the opposite side buy
             const { buyTab } = PageAdapter.findBuySellTabs();
             if (buyTab && buyTab.getAttribute('data-state') !== 'checked') {
                 buyTab.click();
@@ -762,19 +789,31 @@
                 Logger.log('Safety: clicked ' + side + ' outcome button');
             }
 
-            // LIVE MODE: click the trade button (amount already $1 from original buy)
-            if (Overlay.getBuyMode() === 'LIVE') {
-                setTimeout(() => {
-                    const tradeBtn = PageAdapter.findTradeButton();
-                    if (tradeBtn) {
-                        Logger.log('SAFETY LIVE BUY: clicking "' + tradeBtn.textContent.trim() + '"');
-                        PageAdapter.clickTradeButton();
-                        Logger.log('SAFETY LIVE BUY: executed!');
-                    } else {
-                        Logger.log('SAFETY LIVE BUY ERROR: trade button not found!');
-                    }
-                }, 100);
-            }
+            // Click +$1 (amount resets when switching outcome)
+            setTimeout(() => {
+                const quickBtns = PageAdapter.findQuickAmountButtons();
+                const oneBtn = quickBtns.find(b => b.label === '+$1');
+                if (oneBtn) {
+                    oneBtn.el.click();
+                    Logger.log('Safety: clicked +$1');
+                } else {
+                    Logger.log('Safety WARNING: +$1 button not found!');
+                }
+
+                // LIVE MODE: click the trade button after +$1
+                if (Overlay.getBuyMode() === 'LIVE') {
+                    setTimeout(() => {
+                        const tradeBtn = PageAdapter.findTradeButton();
+                        if (tradeBtn) {
+                            Logger.log('SAFETY LIVE BUY: clicking "' + tradeBtn.textContent.trim() + '"');
+                            PageAdapter.clickTradeButton();
+                            Logger.log('SAFETY LIVE BUY: executed!');
+                        } else {
+                            Logger.log('SAFETY LIVE BUY ERROR: trade button not found!');
+                        }
+                    }, 100);
+                }
+            }, 100);
         },
 
         resolveMarket(winningSide) {
@@ -877,7 +916,7 @@
             container.style.cssText = [
                 'position: fixed',
                 'top: 80px',
-                'right: 10px',
+                'left: 10px',
                 'width: 280px',
                 'background: rgb(58, 58, 58)',
                 'color: #e0e0e0',
@@ -916,6 +955,11 @@
             header.appendChild(toggleBtn);
             container.appendChild(header);
 
+            // Body wrapper (everything below header, collapsible)
+            const body = document.createElement('div');
+            body.id = 'pbm-body';
+            this._bodyWrapper = body;
+
             // Status line with Fresh button
             const statusRow = document.createElement('div');
             statusRow.style.cssText = 'display:flex; gap:4px; align-items:center; margin-bottom:6px;';
@@ -946,7 +990,7 @@
                 }
             });
             statusRow.appendChild(freshBtn);
-            container.appendChild(statusRow);
+            body.appendChild(statusRow);
 
             // Market info with Early button
             // _earlyMode: 0=OFF (1:30), 1=Early (2:30), 2=Earlier (3:30)
@@ -986,7 +1030,7 @@
                 this._updateRules();
             });
             marketRow.appendChild(earlyBtn);
-            container.appendChild(marketRow);
+            body.appendChild(marketRow);
 
             // Cash + Race row (line 3)
             const cashRaceRow = document.createElement('div');
@@ -1015,14 +1059,14 @@
                 Logger.log('Race: ' + (this._raceEnabled ? 'ON ($' + CONFIG.RACE_THRESHOLD + ' jump)' : 'OFF'));
             });
             cashRaceRow.appendChild(raceBtn);
-            container.appendChild(cashRaceRow);
+            body.appendChild(cashRaceRow);
 
             // Market resolve prediction
             const resolveRow = document.createElement('div');
             resolveRow.id = 'pbm-resolve';
             resolveRow.style.cssText = 'margin-bottom:6px; padding:3px; background:#111; border-radius:4px; font-weight:bold; font-size:11px; text-align:center; white-space:nowrap; overflow:hidden;';
             resolveRow.textContent = 'Will resolve: --';
-            container.appendChild(resolveRow);
+            body.appendChild(resolveRow);
             this._elements.resolve = resolveRow;
 
             // Timer + Rules row
@@ -1030,7 +1074,7 @@
             timerRow.id = 'pbm-timer';
             timerRow.style.cssText = 'margin-bottom:6px; padding:4px; background:#111; border-radius:4px; display:flex; justify-content:space-between;';
             timerRow.innerHTML = '<span>Time left: --</span><span id="pbm-rules" style="color:#666;"></span>';
-            container.appendChild(timerRow);
+            body.appendChild(timerRow);
             this._elements.timer = timerRow;
 
             // Prices row
@@ -1051,14 +1095,14 @@
             pricesRow.appendChild(downPrice);
             this._elements.downPrice = downPrice;
 
-            container.appendChild(pricesRow);
+            body.appendChild(pricesRow);
 
             // Trend line
             const trend = document.createElement('div');
             trend.id = 'pbm-trend';
             trend.style.cssText = 'margin-bottom:6px; padding:4px; background:#111; border-radius:4px;';
             trend.textContent = 'T: --';
-            container.appendChild(trend);
+            body.appendChild(trend);
             this._elements.trend = trend;
 
             // Signal line
@@ -1066,7 +1110,7 @@
             signal.id = 'pbm-signal';
             signal.style.cssText = 'margin-bottom:6px; padding:4px; background:#111; border-radius:4px; color:#ffcc00;';
             signal.textContent = 'S: none';
-            container.appendChild(signal);
+            body.appendChild(signal);
             this._elements.signal = signal;
 
             // BUY MODE: two separate buttons SIM and LIVE
@@ -1128,14 +1172,14 @@
             buyRow.appendChild(liveBtn);
             this._elements.simBtn = simBtn;
             this._elements.liveBtn = liveBtn;
-            container.appendChild(buyRow);
+            body.appendChild(buyRow);
 
             // Sim trade info row
             const simTrade = document.createElement('div');
             simTrade.id = 'pbm-simtrade';
             simTrade.style.cssText = 'margin-bottom:6px; padding:4px; background:#1a0a2e; border:1px solid #444; border-radius:4px; color:#aaa; font-size:11px;';
             simTrade.textContent = 'no position';
-            container.appendChild(simTrade);
+            body.appendChild(simTrade);
             this._elements.simTrade = simTrade;
 
             // Profit row with CLEAR button
@@ -1160,13 +1204,13 @@
             });
             profitWrapper.appendChild(clearBtn);
 
-            container.appendChild(profitWrapper);
+            body.appendChild(profitWrapper);
 
             // Log area
             const logLabel = document.createElement('div');
             logLabel.style.cssText = 'color:#666; font-size:10px; margin-bottom:2px;';
             logLabel.textContent = 'Log:';
-            container.appendChild(logLabel);
+            body.appendChild(logLabel);
 
             const logArea = document.createElement('pre');
             logArea.style.cssText = [
@@ -1181,12 +1225,12 @@
                 'white-space: pre-wrap',
                 'word-break: break-all',
             ].join('; ');
-            container.appendChild(logArea);
+            body.appendChild(logArea);
             Logger.setElement(logArea);
 
+            container.appendChild(body);
             document.body.appendChild(container);
             this._container = container;
-            this._bodyElements = container.querySelectorAll(':scope > div:not(:first-child), :scope > pre');
 
             // Start collapsed if OFF
             if (!this._enabled) {
@@ -1198,35 +1242,17 @@
         },
 
         _collapseBody() {
-            if (this._bodyElements) {
-                this._bodyElements.forEach(el => el.style.display = 'none');
-            }
-            // Remove header bottom margin/border for compact strip
+            if (this._bodyWrapper) this._bodyWrapper.style.display = 'none';
             const header = this._container ? this._container.querySelector(':scope > div:first-child') : null;
-            if (header) {
-                header.style.marginBottom = '0';
-                header.style.borderBottom = 'none';
-                header.style.paddingBottom = '0';
-            }
-            if (this._container) {
-                this._container.style.padding = '6px 12px';
-            }
+            if (header) { header.style.marginBottom = '0'; header.style.borderBottom = 'none'; header.style.paddingBottom = '0'; }
+            if (this._container) this._container.style.padding = '6px 12px';
         },
 
         _expandBody() {
-            if (this._bodyElements) {
-                this._bodyElements.forEach(el => el.style.display = '');
-            }
-            // Restore header styling
+            if (this._bodyWrapper) this._bodyWrapper.style.display = '';
             const header = this._container ? this._container.querySelector(':scope > div:first-child') : null;
-            if (header) {
-                header.style.marginBottom = '8px';
-                header.style.borderBottom = '1px solid #333';
-                header.style.paddingBottom = '6px';
-            }
-            if (this._container) {
-                this._container.style.padding = '12px';
-            }
+            if (header) { header.style.marginBottom = '8px'; header.style.borderBottom = '1px solid #333'; header.style.paddingBottom = '6px'; }
+            if (this._container) this._container.style.padding = '12px';
         },
 
         _getMaxSecs() {
